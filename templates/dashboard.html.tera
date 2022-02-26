@@ -1,0 +1,6 @@
+{% extends "base" %}
+
+{% block content %}
+<h1>{{ fluent(key="dashboard", lang=lang) }}</h1>
+<p>{{ fluent(key="welcome", lang=lang, name=display_name) }}</p>
+{% endblock content %}

@@ -1,0 +1,11 @@
+{% extends "base" %}
+
+{% block content %}
+<h1>{{ fluent(key="invite", lang=lang) }}</h1>
+<form class="pure-form" method="post">
+    <fieldset>
+        <input type="email" id="email" name="email" placeholder="{{fluent(key="email", lang=lang)}}" />
+        <button type="submit" class="pure-button pure-button-primary">{{ fluent(key="invite-action", lang=lang) }}</button>
+    </fieldset>
+</form>
+{% endblock content %}

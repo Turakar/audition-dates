@@ -1,0 +1,30 @@
+brand = Collegium Musicum der RWTH Aachen
+title = Vorsingtermine - { brand }
+language = Deutsch
+
+login = Login
+remember-me = Angemeldet bleiben
+sign-in = Anmelden
+email = E-Mail Adresse
+password = Passwort
+register = Registrieren
+display-name = Anzeigename
+email-already-registered = Es existiert bereits ein Admin mit dieser E-Mail!
+invalid-login = E-Mail oder Passwort falsch!
+
+validation-password = Das Passwort muss mindestens acht deutsche Zeichen enthalten, davon ein Kleinbuchstabe, ein Großbuchstabe, eine Ziffer und ein Sonderzeichen.
+validation-email = Die E-Mail-Adresse ist ungültig!
+validation-display-name = Der Anzeigename muss mindestens acht deutsche Zeichen enthalten.
+validation-unknown = Ungültige Eingabe!
+
+invite = Admin einladen
+invite-action = Einladen
+invite-successful = Einladung erfolgreich versendet!
+initial-registration-info = Es ist noch kein Admin registriert, erlaube initiale Einladung.
+invite-invalid-token = Invalides Einladungs-Token!
+
+mail-invite-subject = Einladung zur Verwaltung der Vorsingtermine
+mail-invite-body = Du wurdest zur Verwaltung der Vorsingtermine eingeladen. Bitte besuche zur Registrierung folgenden Link:
+
+dashboard = Admin Dashboard
+welcome = Willkommen { $name }!

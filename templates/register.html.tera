@@ -1,0 +1,15 @@
+{% extends "base" %}
+
+{% block content %}
+<h1>{{ fluent(key="register", lang=lang) }}</h1>
+<form class="pure-form pure-form-stacked" method="post">
+    <label for="email">{{ fluent(key="email", lang=lang) }}</label>
+    <input type="email" id="email" name="email" value="{{ email }}" placeholder="{{ fluent(key="email", lang=lang) }}" />
+    <label for="display-name">{{ fluent(key="display-name", lang=lang) }}</label>
+    <input type="text" id="display-name" name="display_name" value="{{ display_name }}" placeholder="{{ fluent(key="display-name", lang=lang) }}" />
+    <label for="password">{{ fluent(key="password", lang=lang) }}</label>
+    <input type="password" id="password" name="password" placeholder="{{ fluent(key="password", lang=lang) }}" />
+    <input type="hidden" id="token" name="token" value="{{ token }}" />
+    <button type="submit" class="pure-button pure-button-primary">{{ fluent(key="register", lang=lang) }}</button>
+</form>
+{% endblock content %}

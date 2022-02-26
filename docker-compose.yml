@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  database:
+    image: 'postgres:14-alpine'
+    container_name: database
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: audition_dates
+      POSTGRES_PASSWORD: shouldbesecret
+      POSTGRES_DB: audition_dates
+  smtp:
+    image: 'rnwood/smtp4dev:v3'
+    ports:
+      - '5000:80'
+      - '25:25'
+    volumes:
+      - audition-dates-smtp:/smtp4dev
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - '5001:80'
+    volumes:
+      - audition-dates-pgadmin:/var/lib/pgadmin
+    environment:
+      - "PGADMIN_DEFAULT_EMAIL=foo@example.com"
+      - "PGADMIN_DEFAULT_PASSWORD=shouldbesecret"
+
+volumes:
+  audition-dates-smtp:
+  audition-dates-pgadmin:

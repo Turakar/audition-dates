@@ -1,0 +1,3 @@
+{{ fluent (key="mail-invite-body", lang=lang) }}
+
+{{ link }}

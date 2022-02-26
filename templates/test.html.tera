@@ -1,0 +1,9 @@
+{% extends "base" %}
+
+{% block content %}
+{% if name %}
+    {{ fluent(key="greeting", lang=lang, name=name) }}
+{% else %}
+    {{ fluent(key="hello-world", lang=lang) }}
+{% endif %}
+{% endblock content %}

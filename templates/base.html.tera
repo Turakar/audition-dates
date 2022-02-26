@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang={{ lang }}>
+<head>
+    {% block head %}
+    <link rel="stylesheet" href="/static/pure.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ fluent(key="title", lang=lang) }}</title>
+    {% endblock head %}
+</head>
+<body>
+    {% if messages %}
+    <div id="messages">
+        {% for message in messages %}
+            <div id="message">{{ fluent(key=message.text_key, lang=lang) }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div id="content">{% block content %}{% endblock content %}</div>
+    <div id="footer">
+        {% block footer %}
+        <select id="language-selector">
+            {% for language in supported_languages() %}
+                <option value="{{language}}" {% if lang == language %} selected {% endif %}>{{ fluent(key="language", lang=language) }}</option>
+            {% endfor %}
+        </select>
+        <a href="https://www.cm.rwth-aachen.de">{{ fluent(key="brand", lang=lang) }}</a>
+        {% endblock footer %}
+        <script type="module" src="/static/js.cookie.js"></script>
+        <script type="module" src="/static/base.js"></script>
+    </div>
+</body>
+</html>

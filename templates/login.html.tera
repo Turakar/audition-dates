@@ -1,0 +1,15 @@
+{% extends "base" %}
+
+{% block content %}
+<h1>{{ fluent(key="login", lang=lang) }}</h1>
+<form class="pure-form" method="post">
+    <fieldset>
+        <input type="email" name="email" value="{{ email }}" placeholder="{{ fluent(key="email", lang=lang)}}" />
+        <input type="password" name="password" placeholder="{{ fluent(key="password", lang=lang)}}" />
+        <label for="remember">
+            <input type="checkbox" id="remember" name="remember" /> {{ fluent(key="remember-me", lang=lang) }}
+        </label>
+        <button type="submit" class="pure-button pure-button-primary">{{ fluent(key="sign-in", lang=lang) }}</button>
+    </fieldset>
+</form>
+{% endblock content %}

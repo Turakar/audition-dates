@@ -1,0 +1,7 @@
+[default]
+email_from_address = "noreply@example.com"
+web_address = "http://localhost:8000"
+secret_key = "UZ/Q8SFljW9D7BQbTyIFWaYCZ4JOHczt7XMgdYXwJLk="
+
+[default.databases.database]
+url = "postgres://audition_dates:shouldbesecret@localhost/audition_dates"
