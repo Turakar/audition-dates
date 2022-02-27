@@ -33,7 +33,10 @@ forgot-password = Ich habe mein Passwort vergessen.
 password-reset = Passwort Zurücksetzen
 password-reset-action = Passwort zurücksetzen
 password-reset-sent = E-Mail zum Zurücksetzen des Passworts verschickt.
+new-password = Neues Passwort
+password-reset-invalid = Invalider Link zum Zurücksetzen des Passworts!
 
-mail-password-reset
-    .subject = Passwort zurücksetzen
-    .body = Für deinen Account zur Verwaltung der Vorsingtermine wurde ein Zurücksetzen des Passworts beantragt. Bitte besuche hierfür folgenden Link:
+mail-password-reset-subject = Passwort zurücksetzen
+mail-password-reset-body = Für deinen Account zur Verwaltung der Vorsingtermine wurde ein Zurücksetzen des Passworts beantragt. Bitte besuche hierfür folgenden Link:
+mail-password-was-reset-subject = Sicherheitsinformation
+mail-password-was-reset-body = Jemand hat dein Passwort zur Verwaltung der Vorsingtermine zurückgesetzt. Wenn du das nicht warst, melde dich bitte umgehend beim Administrator!

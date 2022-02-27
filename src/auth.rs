@@ -342,12 +342,12 @@ pub async fn login_post<'r>(
 }
 
 #[derive(FromForm)]
-pub struct RequestResetForm<'r> {
+pub struct RequestPasswordResetForm<'r> {
     email: FormResult<'r, Email<'r>>,
 }
 
 #[get("/admin/password-reset-request")]
-pub async fn password_reset_get(lang: Language) -> Template {
+pub async fn password_reset_request_get(lang: Language) -> Template {
     Template::render(
         "password-reset-request",
         context! { lang: lang.into_string(), email: "" },
@@ -355,15 +355,15 @@ pub async fn password_reset_get(lang: Language) -> Template {
 }
 
 #[post("/admin/password-reset-request", data = "<form>")]
-pub async fn password_reset_post<'r>(
+pub async fn password_reset_request_post<'r>(
     lang: Language,
     mut db: Connection<Database>,
     mailer: &State<Mailer>,
     config: &State<Config>,
-    form: Form<RequestResetForm<'r>>
+    form: Form<RequestPasswordResetForm<'r>>
 ) -> RocketResult<Template> {
     let lang = lang.into_string();
-    let RequestResetForm { email } = form.into_inner();
+    let RequestPasswordResetForm { email } = form.into_inner();
     let mut messages = Vec::new();
     let email = handle_form_error(email, &mut messages);
     if !messages.is_empty() {
@@ -377,6 +377,7 @@ pub async fn password_reset_post<'r>(
         "select id from admins where email = $1",
         &email,
     ).fetch_optional(&mut *db).await?.map(|record| record.id);
+    println!("admin ID: {:?}", &admin_id);
 
     if let Some(admin_id) = admin_id {
         let token = sqlx::query!(
@@ -393,8 +394,8 @@ pub async fn password_reset_post<'r>(
             .from(config.email_from_address.parse()?)
             .subject(
                 LOCALES
-                    .lookup_single_language::<&str>(&lang.parse()?, "mail-password-reset.subject", None)
-                    .ok_or(anyhow!("Missing translation for mail-password-reset.subject!"))?,
+                    .lookup_single_language::<&str>(&lang.parse()?, "mail-password-reset-subject", None)
+                    .ok_or(anyhow!("Missing translation for mail-password-reset-subject!"))?,
             )
             .body(MAIL_TEMPLATES.render("password-reset.tera", &mail_context)?)?;
         mailer.send(mail).await?;
@@ -408,6 +409,79 @@ pub async fn password_reset_post<'r>(
             messages: [Message { text_key: String::from("password-reset-sent"), message_type: MessageType::Success }]
         },
     ))
+}
+
+#[derive(FromForm)]
+pub struct PasswordResetForm<'r> {
+    token: &'r str,
+    password: FormResult<'r, Password<'r>>,
+}
+
+#[get("/admin/password-reset?<token>")]
+pub async fn password_reset_get(lang: Language, token: &str) -> Template {
+    Template::render(
+        "password-reset",
+        context! { lang: lang.into_string(), token },
+    )
+}
+
+#[post("/admin/password-reset", data = "<form>")]
+pub async fn password_reset_post<'r>(
+    lang: Language,
+    mut db: Connection<Database>,
+    mailer: &State<Mailer>,
+    config: &State<Config>,
+    form: Form<PasswordResetForm<'r>>
+) -> RocketResult<Result<Redirect, Template>> {
+    let lang = lang.into_string();
+    let PasswordResetForm { token, password } = form.into_inner();
+    let mut messages = Vec::new();
+    let password = handle_form_error(password, &mut messages);
+    if !messages.is_empty() {
+        return Ok(Err(Template::render(
+            "password-reset",
+            context! { lang, token, messages },
+        )))
+    }
+
+    let id = sqlx::query!(
+        "delete from password_resets where token = $1 returning admin_id",
+        &token,
+    ).fetch_optional(&mut *db).await?;
+
+    match id {
+        Some(record) => {
+            let id = record.admin_id;
+            let email = sqlx::query!(
+                "update admins set password = $1 where id = $2 returning email",
+                &hash_password(password)?,
+                &id,
+            ).fetch_one(&mut *db).await?.email;
+
+            let mut mail_context = tera::Context::new();
+            mail_context.insert("lang", &lang);
+            let mail = EmailMessage::builder()
+                .to(email.parse()?)
+                .from(config.email_from_address.parse()?)
+                .subject(
+                    LOCALES
+                        .lookup_single_language::<&str>(&lang.parse()?, "mail-password-was-reset-subject", None)
+                        .ok_or(anyhow!("Missing translation for mail-password-was-reset-subject!"))?,
+                )
+                .body(MAIL_TEMPLATES.render("password-was-reset.tera", &mail_context)?)?;
+            mailer.send(mail).await?;
+
+            Ok(Ok(
+                Redirect::to(uri!(login_get))
+            ))
+        },
+        None => {
+            Ok(Err(Template::render(
+                "password-reset",
+                context! { lang, token, messages: [Message { text_key: String::from("password-reset-invalid"), message_type: MessageType::Error }]}
+            )))
+        }
+    }
 }
 
 pub struct Admin {

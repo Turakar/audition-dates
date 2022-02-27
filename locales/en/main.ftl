@@ -32,7 +32,10 @@ forgot-password = I forgot my password.
 password-reset = Password reset
 password-reset-action = Reset password
 password-reset-sent = E-Mail for password reset sent successfully.
+new-password = New password
+password-reset-invalid = Invalid link for password reset!
 
-mail-password-reset
-    .subject = Password reset
-    .body = Someone requested a reset of your password for the administration of the audition dates. Please visit the following link to reset your password:
+mail-password-reset-subject = Password reset
+mail-password-reset-body = Someone requested a reset of your password for the administration of the audition dates. Please visit the following link to reset your password:
+mail-password-was-reset-subject = Security information
+mail-password-was-reset-body = Someone reset your password for the administation of the audition dates. If this was not you, please contact the system administrator immediately!

@@ -90,7 +90,11 @@ fn rocket() -> _ {
                 auth::invite_get,
                 auth::invite_post,
                 auth::register_get,
-                auth::register_post
+                auth::register_post,
+                auth::password_reset_request_get,
+                auth::password_reset_request_post,
+                auth::password_reset_get,
+                auth::password_reset_post,
             ],
         )
         .mount("/", routes![dashboard::dashboard])
