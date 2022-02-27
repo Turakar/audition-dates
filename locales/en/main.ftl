@@ -27,3 +27,12 @@ mail-invite-body = You were invited to the administration of the audition dates.
 
 dashboard = Admin Dashboard
 welcome = Welcome { $name }!
+
+forgot-password = I forgot my password.
+password-reset = Password reset
+password-reset-action = Reset password
+password-reset-sent = E-Mail for password reset sent successfully.
+
+mail-password-reset
+    .subject = Password reset
+    .body = Someone requested a reset of your password for the administration of the audition dates. Please visit the following link to reset your password:

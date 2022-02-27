@@ -60,7 +60,7 @@ pub async fn invite_get(
             "invite",
             context! {
                 lang: lang.into_string(),
-                messages: vec![Message { text_key: String::from("initial-registration-info"), message_type: MessageType::Info }],
+                messages: [Message { text_key: String::from("initial-registration-info"), message_type: MessageType::Info }],
             },
         )),
         _ => Err(Status::Unauthorized),
@@ -105,7 +105,7 @@ pub async fn invite_post<'r>(
             "invite",
             context! {
                 lang,
-                messages: vec![Message {
+                messages: [Message {
                     text_key: String::from("email-already-registered"),
                     message_type: MessageType::Error
                 }],
@@ -155,7 +155,7 @@ pub async fn invite_post<'r>(
         "invite",
         context! {
             lang,
-            messages: vec![Message {
+            messages: [Message {
                 text_key: String::from("invite-successful"),
                 message_type: MessageType::Success
             }],
@@ -230,7 +230,7 @@ pub async fn register_post(
                 token,
                 email,
                 display_name,
-                messages: vec![Message { text_key: String::from("invite-invalid-token"), message_type: MessageType::Error }],
+                messages: [Message { text_key: String::from("invite-invalid-token"), message_type: MessageType::Error }],
             },
         )));
     }
@@ -332,13 +332,82 @@ pub async fn login_post<'r>(
             context! {
                 lang: lang.into_string(),
                 email,
-                messages: vec![Message {
+                messages: [Message {
                     text_key: String::from("invalid-login"),
                     message_type: MessageType::Error,
                 }],
             },
         ))),
     }
+}
+
+#[derive(FromForm)]
+pub struct RequestResetForm<'r> {
+    email: FormResult<'r, Email<'r>>,
+}
+
+#[get("/admin/password-reset-request")]
+pub async fn password_reset_get(lang: Language) -> Template {
+    Template::render(
+        "password-reset-request",
+        context! { lang: lang.into_string(), email: "" },
+    )
+}
+
+#[post("/admin/password-reset-request", data = "<form>")]
+pub async fn password_reset_post<'r>(
+    lang: Language,
+    mut db: Connection<Database>,
+    mailer: &State<Mailer>,
+    config: &State<Config>,
+    form: Form<RequestResetForm<'r>>
+) -> RocketResult<Template> {
+    let lang = lang.into_string();
+    let RequestResetForm { email } = form.into_inner();
+    let mut messages = Vec::new();
+    let email = handle_form_error(email, &mut messages);
+    if !messages.is_empty() {
+        return Ok(Template::render(
+            "password-reset-request",
+            context! { lang, email, messages },
+        ));
+    }
+
+    let admin_id = sqlx::query!(
+        "select id from admins where email = $1",
+        &email,
+    ).fetch_optional(&mut *db).await?.map(|record| record.id);
+
+    if let Some(admin_id) = admin_id {
+        let token = sqlx::query!(
+            "insert into password_resets (admin_id) values ($1) returning token",
+            &admin_id,
+        ).fetch_one(&mut *db).await?.token;
+
+        let link = format!("{}/admin/password-reset?token={}", &config.web_address, &token);
+        let mut mail_context = tera::Context::new();
+        mail_context.insert("lang", &lang);
+        mail_context.insert("link", &link);
+        let mail = EmailMessage::builder()
+            .to(email.parse()?)
+            .from(config.email_from_address.parse()?)
+            .subject(
+                LOCALES
+                    .lookup_single_language::<&str>(&lang.parse()?, "mail-password-reset.subject", None)
+                    .ok_or(anyhow!("Missing translation for mail-password-reset.subject!"))?,
+            )
+            .body(MAIL_TEMPLATES.render("password-reset.tera", &mail_context)?)?;
+        mailer.send(mail).await?;
+    }
+
+    Ok(Template::render(
+        "password-reset-request",
+        context! {
+            lang,
+            email: "",
+            messages: [Message { text_key: String::from("password-reset-sent"), message_type: MessageType::Success }]
+        },
+    ))
 }
 
 pub struct Admin {

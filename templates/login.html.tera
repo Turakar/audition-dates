@@ -11,5 +11,6 @@
         </label>
         <button type="submit" class="pure-button pure-button-primary">{{ fluent(key="sign-in", lang=lang) }}</button>
     </fieldset>
+    <a href="/admin/password-reset-request">{{ fluent(key="forgot-password", lang=lang }}</a>
 </form>
 {% endblock content %}

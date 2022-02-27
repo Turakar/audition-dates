@@ -28,3 +28,12 @@ mail-invite-body = Du wurdest zur Verwaltung der Vorsingtermine eingeladen. Bitt
 
 dashboard = Admin Dashboard
 welcome = Willkommen { $name }!
+
+forgot-password = Ich habe mein Passwort vergessen.
+password-reset = Passwort Zurücksetzen
+password-reset-action = Passwort zurücksetzen
+password-reset-sent = E-Mail zum Zurücksetzen des Passworts verschickt.
+
+mail-password-reset
+    .subject = Passwort zurücksetzen
+    .body = Für deinen Account zur Verwaltung der Vorsingtermine wurde ein Zurücksetzen des Passworts beantragt. Bitte besuche hierfür folgenden Link:
