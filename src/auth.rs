@@ -244,7 +244,7 @@ pub async fn register_post(
     .execute(&mut *db)
     .await?;
 
-    Ok(Ok(Redirect::to(uri!(login_get))))
+    Ok(Ok(Redirect::to(uri!(login_get(redirect = Option::<&str>::None)))))
 }
 
 fn hash_password(password: &str) -> anyhow::Result<String> {
@@ -277,16 +277,18 @@ struct LoginCookie {
     valid_until: DateTime<Utc>,
 }
 
-#[get("/admin/login")]
-pub async fn login_get(lang: Language) -> Template {
+#[get("/admin/login?<redirect>")]
+#[allow(unused_variables)]
+pub async fn login_get(lang: Language, redirect: Option<&str>) -> Template {
     Template::render("login", context! { lang: lang.into_string(), email: "" })
 }
 
-#[post("/admin/login", data = "<form>")]
+#[post("/admin/login?<redirect>", data = "<form>")]
 pub async fn login_post<'r>(
     lang: Language,
     mut db: Connection<Database>,
     cookies: &CookieJar<'_>,
+    redirect: Option<&'r str>,
     form: Form<LoginForm<'r>>,
 ) -> RocketResult<Result<Redirect, Template>> {
     let LoginForm {
@@ -325,7 +327,11 @@ pub async fn login_post<'r>(
                     .finish()
             };
             cookies.add_private(cookie);
-            Ok(Ok(Redirect::to(uri!(invite_get))))
+            let redirect = match redirect {
+                None => Redirect::to(uri!(crate::dashboard::dashboard)),
+                Some(redirect) => Redirect::to(String::from(redirect))
+            };
+            Ok(Ok(redirect))
         }
         _ => Ok(Err(Template::render(
             "login",
@@ -360,7 +366,7 @@ pub async fn password_reset_request_post<'r>(
     mut db: Connection<Database>,
     mailer: &State<Mailer>,
     config: &State<Config>,
-    form: Form<RequestPasswordResetForm<'r>>
+    form: Form<RequestPasswordResetForm<'r>>,
 ) -> RocketResult<Template> {
     let lang = lang.into_string();
     let RequestPasswordResetForm { email } = form.into_inner();
@@ -373,19 +379,25 @@ pub async fn password_reset_request_post<'r>(
         ));
     }
 
-    let admin_id = sqlx::query!(
-        "select id from admins where email = $1",
-        &email,
-    ).fetch_optional(&mut *db).await?.map(|record| record.id);
+    let admin_id = sqlx::query!("select id from admins where email = $1", &email,)
+        .fetch_optional(&mut *db)
+        .await?
+        .map(|record| record.id);
     println!("admin ID: {:?}", &admin_id);
 
     if let Some(admin_id) = admin_id {
         let token = sqlx::query!(
             "insert into password_resets (admin_id) values ($1) returning token",
             &admin_id,
-        ).fetch_one(&mut *db).await?.token;
+        )
+        .fetch_one(&mut *db)
+        .await?
+        .token;
 
-        let link = format!("{}/admin/password-reset?token={}", &config.web_address, &token);
+        let link = format!(
+            "{}/admin/password-reset?token={}",
+            &config.web_address, &token
+        );
         let mut mail_context = tera::Context::new();
         mail_context.insert("lang", &lang);
         mail_context.insert("link", &link);
@@ -394,8 +406,14 @@ pub async fn password_reset_request_post<'r>(
             .from(config.email_from_address.parse()?)
             .subject(
                 LOCALES
-                    .lookup_single_language::<&str>(&lang.parse()?, "mail-password-reset-subject", None)
-                    .ok_or(anyhow!("Missing translation for mail-password-reset-subject!"))?,
+                    .lookup_single_language::<&str>(
+                        &lang.parse()?,
+                        "mail-password-reset-subject",
+                        None,
+                    )
+                    .ok_or(anyhow!(
+                        "Missing translation for mail-password-reset-subject!"
+                    ))?,
             )
             .body(MAIL_TEMPLATES.render("password-reset.tera", &mail_context)?)?;
         mailer.send(mail).await?;
@@ -431,7 +449,7 @@ pub async fn password_reset_post<'r>(
     mut db: Connection<Database>,
     mailer: &State<Mailer>,
     config: &State<Config>,
-    form: Form<PasswordResetForm<'r>>
+    form: Form<PasswordResetForm<'r>>,
 ) -> RocketResult<Result<Redirect, Template>> {
     let lang = lang.into_string();
     let PasswordResetForm { token, password } = form.into_inner();
@@ -441,13 +459,15 @@ pub async fn password_reset_post<'r>(
         return Ok(Err(Template::render(
             "password-reset",
             context! { lang, token, messages },
-        )))
+        )));
     }
 
     let id = sqlx::query!(
         "delete from password_resets where token = $1 returning admin_id",
         &token,
-    ).fetch_optional(&mut *db).await?;
+    )
+    .fetch_optional(&mut *db)
+    .await?;
 
     match id {
         Some(record) => {
@@ -456,7 +476,10 @@ pub async fn password_reset_post<'r>(
                 "update admins set password = $1 where id = $2 returning email",
                 &hash_password(password)?,
                 &id,
-            ).fetch_one(&mut *db).await?.email;
+            )
+            .fetch_one(&mut *db)
+            .await?
+            .email;
 
             let mut mail_context = tera::Context::new();
             mail_context.insert("lang", &lang);
@@ -465,22 +488,24 @@ pub async fn password_reset_post<'r>(
                 .from(config.email_from_address.parse()?)
                 .subject(
                     LOCALES
-                        .lookup_single_language::<&str>(&lang.parse()?, "mail-password-was-reset-subject", None)
-                        .ok_or(anyhow!("Missing translation for mail-password-was-reset-subject!"))?,
+                        .lookup_single_language::<&str>(
+                            &lang.parse()?,
+                            "mail-password-was-reset-subject",
+                            None,
+                        )
+                        .ok_or(anyhow!(
+                            "Missing translation for mail-password-was-reset-subject!"
+                        ))?,
                 )
                 .body(MAIL_TEMPLATES.render("password-was-reset.tera", &mail_context)?)?;
             mailer.send(mail).await?;
 
-            Ok(Ok(
-                Redirect::to(uri!(login_get))
-            ))
-        },
-        None => {
-            Ok(Err(Template::render(
-                "password-reset",
-                context! { lang, token, messages: [Message { text_key: String::from("password-reset-invalid"), message_type: MessageType::Error }]}
-            )))
+            Ok(Ok(Redirect::to(uri!(login_get(redirect = Option::<&str>::None)))))
         }
+        None => Ok(Err(Template::render(
+            "password-reset",
+            context! { lang, token, messages: [Message { text_key: String::from("password-reset-invalid"), message_type: MessageType::Error }]},
+        ))),
     }
 }
 
@@ -511,4 +536,10 @@ impl<'r> FromRequest<'r> for Admin {
             Failure((Status::Unauthorized, anyhow!("Invalid login cookie!")))
         }
     }
+}
+
+#[catch(401)]
+pub async fn unauthorized_handler(req: &Request<'_>) -> Redirect {
+    let to = req.uri().to_string();
+    Redirect::to(uri!(login_get(redirect = Some(to))))
 }

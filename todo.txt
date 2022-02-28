@@ -1,6 +1,4 @@
 - configuration
-- password reset
-- redirect after login
 - add time slots
 - book time slot, token generation, update available time slots, personal data, prevent duplicate bookings
 - view bookings and personal data

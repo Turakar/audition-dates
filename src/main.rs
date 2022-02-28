@@ -1,7 +1,7 @@
 mod auth;
+mod dashboard;
 mod language;
 mod util;
-mod dashboard;
 
 #[macro_use]
 extern crate rocket;
@@ -81,6 +81,7 @@ fn rocket() -> _ {
         .attach(Database::init())
         .attach(AdHoc::config::<Config>())
         .manage(mailer)
+        .register("/", catchers![auth::unauthorized_handler])
         .mount("/static", FileServer::from("static/"))
         .mount(
             "/",
