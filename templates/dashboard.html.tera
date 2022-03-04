@@ -3,4 +3,8 @@
 {% block content %}
 <h1>{{ fluent(key="dashboard", lang=lang) }}</h1>
 <p>{{ fluent(key="welcome", lang=lang, name=display_name) }}</p>
+<div id="actions">
+    <a class="pure-button" href="/admin/date-new-1">{{ fluent(key="date-new", lang=lang) }}</a>
+    <a class="pure-button" href="/admin/invite">{{ fluent(key="invite", lang=lang) }}</a>
+</div>
 {% endblock content %}

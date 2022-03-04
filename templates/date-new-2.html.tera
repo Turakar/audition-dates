@@ -1,0 +1,18 @@
+{% extends "base" %}
+
+{% block content %}
+<h1>{{ fluent(key="date-new", lang=lang) }}</h1>
+<div>{{ fluent(key="date-new-step-2", lang=lang) }}</div>
+<form class="pure-form pure-form-stacked">
+    {% for date in dates %}
+        <label for="date-{{loop.index0}}"><span class="date">{{ date.from_date }}</span> - <span class="date">{{ date.to_date }}</span></label>
+        <input type="checkbox" id="date-{{loop.index0}}" name="date-{{loop.index0}}" selected />
+    {% endfor %}
+    <input type="hidden" name="date_type" value="{{ date_type }}" />
+    <input type="hidden" name="room" value="{{ room }}" />
+    <div>
+        <button type="submit" class="pure-button" name="button" value="back">{{ fluent(key="back", lang=lang) }}</button>
+        <button type="submit" class="pure-button pure-button-primary" name="button" value="submit">{{ fluent(key="create", lang=lang) }}</button>
+    </div>
+</form>
+{% endblock content %}

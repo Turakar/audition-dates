@@ -31,13 +31,13 @@ use crate::Mailer;
 use crate::RocketResult;
 use crate::MAIL_TEMPLATES;
 
-use crate::util::handle_form_error;
-use crate::util::DisplayName;
-use crate::util::Email;
-use crate::util::Password;
+use crate::model::handle_form_error;
+use crate::model::DisplayName;
+use crate::model::Email;
+use crate::model::Password;
 use crate::{
     language::{Language, LOCALES},
-    util::{Message, MessageType},
+    model::{Message, MessageType},
 };
 
 #[derive(FromForm)]
@@ -328,7 +328,7 @@ pub async fn login_post<'r>(
             };
             cookies.add_private(cookie);
             let redirect = match redirect {
-                None => Redirect::to(uri!(crate::dashboard::dashboard)),
+                None => Redirect::to(uri!(crate::admin::dashboard)),
                 Some(redirect) => Redirect::to(String::from(redirect))
             };
             Ok(Ok(redirect))

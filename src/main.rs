@@ -1,13 +1,15 @@
 mod auth;
-mod dashboard;
+mod admin;
 mod language;
-mod util;
+mod model;
 
 #[macro_use]
 extern crate rocket;
 
 #[macro_use]
 extern crate lazy_static;
+
+use std::collections::HashMap;
 
 use lettre::{AsyncSmtpTransport, Tokio1Executor};
 use rocket::{
@@ -65,6 +67,13 @@ lazy_static! {
     };
 }
 
+pub const BROWSER_DATETIME_FORMAT: &'static str = "%Y-%m-%dT%H:%M";
+
+pub fn tera_now(_args: &HashMap<String, tera::Value>) -> tera::Result<tera::Value> {
+    let now = chrono::Local::now();
+    Ok(tera::to_value(format!("{}", now.format(BROWSER_DATETIME_FORMAT)))?)
+}
+
 #[launch]
 fn rocket() -> _ {
     let mailer: Mailer = Mailer::unencrypted_localhost();
@@ -77,6 +86,7 @@ fn rocket() -> _ {
             engines
                 .tera
                 .register_function("supported_languages", language::supported_languages);
+            engines.tera.register_function("now", tera_now);
         }))
         .attach(Database::init())
         .attach(AdHoc::config::<Config>())
@@ -98,5 +108,5 @@ fn rocket() -> _ {
                 auth::password_reset_post,
             ],
         )
-        .mount("/", routes![dashboard::dashboard])
+        .mount("/", routes![admin::dashboard])
 }
