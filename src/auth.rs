@@ -244,7 +244,9 @@ pub async fn register_post(
     .execute(&mut *db)
     .await?;
 
-    Ok(Ok(Redirect::to(uri!(login_get(redirect = Option::<&str>::None)))))
+    Ok(Ok(Redirect::to(uri!(login_get(
+        redirect = Option::<&str>::None
+    )))))
 }
 
 fn hash_password(password: &str) -> anyhow::Result<String> {
@@ -329,7 +331,7 @@ pub async fn login_post<'r>(
             cookies.add_private(cookie);
             let redirect = match redirect {
                 None => Redirect::to(uri!(crate::admin::dashboard)),
-                Some(redirect) => Redirect::to(String::from(redirect))
+                Some(redirect) => Redirect::to(String::from(redirect)),
             };
             Ok(Ok(redirect))
         }
@@ -500,7 +502,9 @@ pub async fn password_reset_post<'r>(
                 .body(MAIL_TEMPLATES.render("password-was-reset.tera", &mail_context)?)?;
             mailer.send(mail).await?;
 
-            Ok(Ok(Redirect::to(uri!(login_get(redirect = Option::<&str>::None)))))
+            Ok(Ok(Redirect::to(uri!(login_get(
+                redirect = Option::<&str>::None
+            )))))
         }
         None => Ok(Err(Template::render(
             "password-reset",

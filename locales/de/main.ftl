@@ -23,6 +23,8 @@ please-select = Bitte auswählen
 continue = Weiter
 back = Zurück
 create = Erstellen
+yes = Ja
+no = Nein
 
 validation-password = Das Passwort muss mindestens acht deutsche Zeichen enthalten, davon ein Kleinbuchstabe, ein Großbuchstabe, eine Ziffer und ein Sonderzeichen.
 validation-email = Die E-Mail-Adresse ist ungültig!

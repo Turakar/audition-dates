@@ -26,6 +26,7 @@ services:
     environment:
       - "PGADMIN_DEFAULT_EMAIL=foo@example.com"
       - "PGADMIN_DEFAULT_PASSWORD=shouldbesecret"
+      - "PGADMIN_MAX_LOGIN_ATTEMPTS=20"
 
 volumes:
   audition-dates-smtp:

@@ -23,6 +23,8 @@ please-select = Please select
 continue = Continue
 back = Back
 create = Create
+yes = Yes
+no = No
 
 validation-password = Passwords must contain at least eight German, one lower case, one upper case, one digit and one special character!
 validation-email = E-Mail must be a well-formed e-mail address.

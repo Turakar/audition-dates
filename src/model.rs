@@ -1,22 +1,26 @@
 use std::error::Error;
 
-use chrono::{NaiveDateTime, Local, DateTime, TimeZone};
+use anyhow::anyhow;
+use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use lazy_regex::regex_is_match;
 use rocket::form::{self, error::ErrorKind, FromFormField, ValueField};
 use rocket_db_pools::Connection;
-use serde::Serialize;
-use sqlx::{database::{HasValueRef, HasArguments}, Decode, encode::IsNull, Encode};
-use anyhow::anyhow;
+use serde::{Deserialize, Serialize};
+use sqlx::{
+    database::{HasArguments, HasValueRef},
+    encode::IsNull,
+    Decode, Encode,
+};
 
 use crate::Database;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Message {
     pub text_key: String,
     pub message_type: MessageType,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub enum MessageType {
     Success,
     Error,
@@ -122,41 +126,50 @@ impl IntoInner<DateTime<Local>> for FormDateTime {
     }
 }
 
-impl <'r> FromFormField<'r> for FormDateTime {
+impl<'r> FromFormField<'r> for FormDateTime {
     fn from_value(field: ValueField<'r>) -> form::Result<'r, Self> {
         let value = field.value;
         let naive = NaiveDateTime::parse_from_str(value, crate::BROWSER_DATETIME_FORMAT)
             .map_err(|_| form::Error::validation("validation-date"))?;
-        let local = Local.from_local_datetime(&naive)
+        let local = Local
+            .from_local_datetime(&naive)
             .single()
             .ok_or_else(|| form::Error::validation("validation-date-ambiguous"))?;
         Ok(FormDateTime(local))
     }
 }
 
-pub async fn validate_room<'a>(room: &'a str, messages: &mut Vec<Message>, db: &mut Connection<Database>) -> anyhow::Result<(&'a str, i32)> {
-    let room_id = sqlx::query!(
-        "select id from rooms where room_number = $1",
-        &room
-    ).fetch_optional(&mut **db).await?;
+pub async fn validate_room<'a>(
+    room: &'a str,
+    messages: &mut Vec<Message>,
+    db: &mut Connection<Database>,
+) -> anyhow::Result<(&'a str, i32)> {
+    let room_id = sqlx::query!("select id from rooms where room_number = $1", &room)
+        .fetch_optional(&mut **db)
+        .await?
+        .map(|x| x.id);
 
     Ok(match room_id {
         Some(room_id) => (room, room_id),
         None => {
-            messages.push(Message { text_key: String::from("validation-room"), message_type: MessageType::Error });
+            messages.push(Message {
+                text_key: String::from("validation-room"),
+                message_type: MessageType::Error,
+            });
             ("", -1)
         }
     })
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct InteropEnumTera {
     display_name: &'static str,
-    value: &'static str
+    value: &'static str,
 }
 
 macro_rules! interop_enum {
     ($name:ident : $($item_name:ident ($value:literal, $display_name:literal)),+) => {
+        #[derive(Serialize, Deserialize, Clone, Copy)]
         pub enum $name {
             $($item_name),+
         }
@@ -198,7 +211,7 @@ macro_rules! interop_enum {
                 }
             }
         }
-        
+
         impl <'q, DB: sqlx::Database> Encode<'q, DB> for $name where &'q str: Encode<'q, DB> {
             fn encode_by_ref(&self, buf: &mut <DB as HasArguments<'q>>::ArgumentBuffer) -> IsNull {
                 use $name::*;
@@ -231,33 +244,26 @@ impl DateType {
     }
 
     pub fn get_variants_tera() -> Vec<InteropEnumTera> {
-        Self::get_variants()
-            .iter()
-            .map(|v| v.tera())
-            .collect()
+        Self::get_variants().iter().map(|v| v.tera()).collect()
     }
 
     pub fn get_voices(&self) -> &'static [Voice] {
         match self {
             DateType::Choir => &[Voice::Female, Voice::Male],
-            DateType::Orchestra => &[Voice::Violin, Voice::Trumpet, Voice::Horn]
+            DateType::Orchestra => &[Voice::Violin, Voice::Trumpet, Voice::Horn],
         }
     }
 
     pub fn get_voices_tera(&self) -> Vec<InteropEnumTera> {
-        Self::get_voices(self)
-            .iter()
-            .map(|v| v.tera())
-            .collect()
+        Self::get_voices(self).iter().map(|v| v.tera()).collect()
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Date {
-    id: Option<i32>,
-    from_date: DateTime<Local>,
-    to_date: DateTime<Local>,
-    room_id: i32,
-    date_type: DateType,
-    active: bool,
+    pub id: Option<i32>,
+    pub from_date: DateTime<Local>,
+    pub to_date: DateTime<Local>,
+    pub room_id: i32,
+    pub date_type: DateType,
 }

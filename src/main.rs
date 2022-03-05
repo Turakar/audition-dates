@@ -1,5 +1,5 @@
-mod auth;
 mod admin;
+mod auth;
 mod language;
 mod model;
 
@@ -9,9 +9,11 @@ extern crate rocket;
 #[macro_use]
 extern crate lazy_static;
 
-use std::collections::HashMap;
+use std::collections::{HashMap};
 
+use chrono::{DateTime, Local};
 use lettre::{AsyncSmtpTransport, Tokio1Executor};
+use model::Date;
 use rocket::{
     fairing::AdHoc,
     fs::FileServer,
@@ -22,6 +24,7 @@ use rocket_db_pools::{sqlx, Database as DatabaseTrait};
 use rocket_dyn_templates::Template;
 use serde::Deserialize;
 use tera::Tera;
+use itertools::Itertools;
 
 pub type Mailer = AsyncSmtpTransport<Tokio1Executor>;
 
@@ -67,11 +70,51 @@ lazy_static! {
     };
 }
 
-pub const BROWSER_DATETIME_FORMAT: &'static str = "%Y-%m-%dT%H:%M";
+pub const BROWSER_DATETIME_FORMAT: &str = "%Y-%m-%dT%H:%M";
 
 pub fn tera_now(_args: &HashMap<String, tera::Value>) -> tera::Result<tera::Value> {
-    let now = chrono::Local::now();
-    Ok(tera::to_value(format!("{}", now.format(BROWSER_DATETIME_FORMAT)))?)
+    let now = chrono::Local::now().naive_local();
+    Ok(tera::to_value(format!(
+        "{}",
+        now.format(BROWSER_DATETIME_FORMAT)
+    ))?)
+}
+
+pub fn tera_format_date(
+    value: &tera::Value,
+    _args: &HashMap<String, tera::Value>,
+) -> tera::Result<tera::Value> {
+    let date: DateTime<Local> = tera::from_value(value.clone())?;
+    let naive = date.naive_local();
+    Ok(tera::to_value(format!(
+        "{}",
+        naive.format(BROWSER_DATETIME_FORMAT)
+    ))?)
+}
+
+pub fn tera_days(
+    value: &tera::Value,
+    _args: &HashMap<String, tera::Value>,
+) -> tera::Result<tera::Value> {
+    let dates: Vec<Date> = tera::from_value(value.clone())?;
+    let days: Vec<DateTime<Local>> = dates.into_iter()
+        .map(|date| date.from_date.date().and_hms(0, 0, 0))
+        .unique()
+        .collect();
+    Ok(tera::to_value(days)?)
+}
+
+pub fn tera_on_day(
+    value: &tera::Value,
+    args: &HashMap<String, tera::Value>
+) -> tera::Result<tera::Value> {
+    let dates: Vec<Date> = tera::from_value(value.clone())?;
+    let day = args.get("day").ok_or_else(|| tera::Error::msg("Missing required argument 'day'!"))?;
+    let day = tera::from_value::<DateTime<Local>>(day.clone())?.date();
+    let filtered: Vec<Date> = dates.into_iter()
+        .filter(|date| date.from_date.date() == day)
+        .collect();
+    Ok(tera::to_value(filtered)?)
 }
 
 #[launch]
@@ -87,6 +130,15 @@ fn rocket() -> _ {
                 .tera
                 .register_function("supported_languages", language::supported_languages);
             engines.tera.register_function("now", tera_now);
+            engines
+                .tera
+                .register_filter("format_date", tera_format_date);
+            engines
+                .tera
+                .register_filter("days", tera_days);
+                engines
+                    .tera
+                    .register_filter("on_day", tera_on_day);
         }))
         .attach(Database::init())
         .attach(AdHoc::config::<Config>())
@@ -108,5 +160,5 @@ fn rocket() -> _ {
                 auth::password_reset_post,
             ],
         )
-        .mount("/", routes![admin::dashboard])
+        .mount("/", routes![admin::dashboard, admin::date_new_1_get, admin::date_new_1_post, admin::date_new_2_post])
 }

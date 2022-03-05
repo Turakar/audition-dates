@@ -25,8 +25,9 @@
         </select>
         <a href="https://www.cm.rwth-aachen.de">{{ fluent(key="brand", lang=lang) }}</a>
         {% endblock footer %}
-        <script type="module" src="/static/js.cookie.js"></script>
-        <script type="module" src="/static/base.js"></script>
     </div>
+    <div style="display: none !important;" id="data-lang">{{ lang }}</div>
+    <script type="module" src="/static/js.cookie.js"></script>
+    <script type="module" src="/static/base.js"></script>
 </body>
 </html>

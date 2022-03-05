@@ -3,16 +3,27 @@
 {% block content %}
 <h1>{{ fluent(key="date-new", lang=lang) }}</h1>
 <div>{{ fluent(key="date-new-step-2", lang=lang) }}</div>
-<form class="pure-form pure-form-stacked">
-    {% for date in dates %}
-        <label for="date-{{loop.index0}}"><span class="date">{{ date.from_date }}</span> - <span class="date">{{ date.to_date }}</span></label>
-        <input type="checkbox" id="date-{{loop.index0}}" name="date-{{loop.index0}}" selected />
+<form class="pure-form pure-form-stacked" method="post" action="/admin/date-new-2">
+    {% set_global index = 0 %}
+    {% for day in dates | days %}
+        <b><span class="date">{{ day | format_date }}</span></b>
+        {% for date in dates | on_day(day=day) %}
+            <div>
+                <span class="time">{{ date.from_date | format_date }}</span> - <span class="time">{{ date.to_date | format_date }}</span>
+                <label for="date_selected[{{index}}]" style="display: inline">
+                    <input type="radio" id="date_selected[{{index}}]" name="date_selected[{{index}}]" value="true" checked />
+                    {{ fluent(key="yes", lang=lang) }}
+                </label>
+                <label for="date_selected[{{index}}]" style="display: inline">
+                    <input type="radio" id="date_selected[{{index}}]" name="date_selected[{{index}}]" value="false" />
+                    {{ fluent(key="no", lang=lang) }}
+                </label>
+            </div>
+            {% set_global index = index + 1 %}
+        {% endfor %}
     {% endfor %}
-    <input type="hidden" name="date_type" value="{{ date_type }}" />
-    <input type="hidden" name="room" value="{{ room }}" />
-    <div>
-        <button type="submit" class="pure-button" name="button" value="back">{{ fluent(key="back", lang=lang) }}</button>
-        <button type="submit" class="pure-button pure-button-primary" name="button" value="submit">{{ fluent(key="create", lang=lang) }}</button>
-    </div>
+    <input type="hidden" name="dates" value='{{ dates | json_encode | safe }}'' />
+    <input type="hidden" name="interval" value="{{ interval }}" />
+    <button type="submit" class="pure-button pure-button-primary">{{ fluent(key="create", lang=lang) }}</button>
 </form>
 {% endblock content %}

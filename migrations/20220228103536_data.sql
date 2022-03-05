@@ -8,8 +8,7 @@ create table dates (
     from_date timestamp with time zone not null,
     to_date timestamp with time zone not null,
     room_id integer references rooms (id),
-    date_type text not null,
-    active boolean not null default false
+    date_type text not null
 );
 
 create table bookings (

@@ -2,7 +2,7 @@
 {% block content %}
 <h1>{{ fluent(key="date-new", lang=lang) }}</h1>
 <div>{{ fluent(key="date-new-step-1", lang=lang) }}</div>
-<form class="pure-form pure-form-stacked" method="post">
+<form class="pure-form pure-form-stacked" method="post" action="/admin/date-new-1">
     <label for="date_type">{{ fluent(key="date-type", lang=lang) }}</label>
     <select name="date_type" id="date_type">
         <option value="">{{ fluent(key="please-select", lang=lang) }}</option>
@@ -18,9 +18,9 @@
         {% endfor %}
     </select>
     <label for="from_date">{{ fluent(key="from-date", lang=lang) }}</label>
-    <input type="datetime-local" name="from_date" id="from_date" required min="now()" value="{{ from_date }}" />
+    <input type="datetime-local" name="from_date" id="from_date" required min="{{ now() }}" value="{{ from_date | format_date }}" />
     <label for="to_date">{{ fluent(key="to-date", lang=lang) }}</label>
-    <input type="datetime-local" name="to_date" id="to_date" required min="now()" value="{{ to_date }}" />
+    <input type="datetime-local" name="to_date" id="to_date" required min="{{ now() }}" value="{{ to_date | format_date }}" />
     <label for="interval">{{ fluent(key="interval", lang=lang) }}</label>
     <input type="number" name="interval" id="interval" step="1" min="1" value="{{ interval }}" />
     <button type="submit" class="pure-button pure-button-primary">{{ fluent(key="continue", lang=lang) }}</button>
