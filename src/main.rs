@@ -160,5 +160,12 @@ fn rocket() -> _ {
                 auth::password_reset_post,
             ],
         )
-        .mount("/", routes![admin::dashboard, admin::date_new_1_get, admin::date_new_1_post, admin::date_new_2_post])
+        .mount("/", routes![
+            admin::dashboard,
+            admin::date_new_1_get,
+            admin::date_new_1_post,
+            admin::date_new_2_post,
+            admin::room_manage_get,
+            admin::room_manage_post,
+        ])
 }

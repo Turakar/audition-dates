@@ -25,6 +25,7 @@ back = Zurück
 create = Erstellen
 yes = Ja
 no = Nein
+delete = Löschen
 
 validation-password = Das Passwort muss mindestens acht deutsche Zeichen enthalten, davon ein Kleinbuchstabe, ein Großbuchstabe, eine Ziffer und ein Sonderzeichen.
 validation-email = Die E-Mail-Adresse ist ungültig!
@@ -69,3 +70,6 @@ interval = Zeit pro Termin in Minuten
 wrong-date-order = Das Von-Datum muss vor dem Bis-Datum liegen.
 interval-not-even = Die Zeit zwischen dem Von- und Bis-Datum muss sich durch das Intervall teilen lassen.
 too-many-dates = Die angegebenen Daten würden zu mehr als 1000 Terminen führen, was nicht erlaubt ist.
+room-manage = Räume erstellen und löschen
+room-deleted = Raum gelöscht.
+room-created = Raum erstellt.

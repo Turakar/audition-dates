@@ -267,3 +267,9 @@ pub struct Date {
     pub room_id: i32,
     pub date_type: DateType,
 }
+
+#[derive(Serialize, Deserialize, sqlx::FromRow)]
+pub struct Room {
+    pub id: i32,
+    pub room_number: String
+}

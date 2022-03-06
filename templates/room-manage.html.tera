@@ -1,0 +1,18 @@
+{% extends "base" %}
+
+{% block content %}
+<h1>{{ fluent(key="room-manage", lang=lang) }}</h1>
+<form method="post">
+    <label for="room_number">{{ fluent(key="room", lang=lang) }}</label>
+    <input type="text" id="room_number" name="room_number" placeholder="{{ fluent(key="room", lang=lang) }}" />
+    <button type="submit" class="pure-button" name="button" value="create">{{ fluent(key="create", lang=lang) }}</button>
+    <table>
+        {% for room in rooms %}
+            <tr>
+                <td>{{ room.room_number }}</td>
+                <td><button type="submit" class="pure-button" name="button" value="delete-{{room.id}}">{{ fluent(key="delete", lang=lang) }}</button></td>
+            </tr>
+        {% endfor %}
+    </table>
+</form>
+{% endblock content %}

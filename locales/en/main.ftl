@@ -25,6 +25,7 @@ back = Back
 create = Create
 yes = Yes
 no = No
+delete = Delete
 
 validation-password = Passwords must contain at least eight German, one lower case, one upper case, one digit and one special character!
 validation-email = E-Mail must be a well-formed e-mail address.
@@ -69,3 +70,6 @@ interval = Time per date in minutes
 wrong-date-order = The from date must be before the to date.
 interval-not-even = The time between the from and to date must be divisible by the interval.
 too-many-dates = The entered data would lead to more than 1000 dates, which is not allowed.
+room-manage = Delete and create rooms
+room-deleted = Room deleted.
+room-created = Room created.
