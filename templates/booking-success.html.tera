@@ -1,0 +1,5 @@
+{% extends "base" %}
+{% block content %}
+<h1>{{ fluent(key="booking-new", lang=lang) }}</h1>
+<p>{{ fluent(key="booking-success", lang=lang) }}</p>
+{% endblock content %}

@@ -2,6 +2,7 @@
 email_from_address = "noreply@example.com"
 web_address = "http://localhost:8000"
 secret_key = "UZ/Q8SFljW9D7BQbTyIFWaYCZ4JOHczt7XMgdYXwJLk="
+dates_per_day = 5
 
 [default.databases.database]
 url = "postgres://audition_dates:shouldbesecret@localhost/audition_dates"

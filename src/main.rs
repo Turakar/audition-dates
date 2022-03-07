@@ -2,6 +2,7 @@ mod admin;
 mod auth;
 mod language;
 mod model;
+mod user;
 
 #[macro_use]
 extern crate rocket;
@@ -9,11 +10,11 @@ extern crate rocket;
 #[macro_use]
 extern crate lazy_static;
 
-use std::collections::{HashMap};
+use std::collections::HashMap;
 
 use chrono::{DateTime, Local};
+use itertools::Itertools;
 use lettre::{AsyncSmtpTransport, Tokio1Executor};
-use model::Date;
 use rocket::{
     fairing::AdHoc,
     fs::FileServer,
@@ -24,7 +25,6 @@ use rocket_db_pools::{sqlx, Database as DatabaseTrait};
 use rocket_dyn_templates::Template;
 use serde::Deserialize;
 use tera::Tera;
-use itertools::Itertools;
 
 pub type Mailer = AsyncSmtpTransport<Tokio1Executor>;
 
@@ -54,6 +54,7 @@ pub struct Database(sqlx::PgPool);
 pub struct Config {
     email_from_address: String,
     web_address: String,
+    dates_per_day: usize,
 }
 
 lazy_static! {
@@ -96,24 +97,48 @@ pub fn tera_days(
     value: &tera::Value,
     _args: &HashMap<String, tera::Value>,
 ) -> tera::Result<tera::Value> {
-    let dates: Vec<Date> = tera::from_value(value.clone())?;
-    let days: Vec<DateTime<Local>> = dates.into_iter()
-        .map(|date| date.from_date.date().and_hms(0, 0, 0))
-        .unique()
-        .collect();
+    let array = value
+        .as_array()
+        .ok_or_else(|| tera::Error::msg("Invalid argument!"))?;
+    let days = array
+        .iter()
+        .map(|value| {
+            let value = value
+                .get("from_date")
+                .ok_or_else(|| tera::Error::msg("Invalid argument!"))?;
+            let datetime: DateTime<Local> = tera::from_value(value.clone())?;
+            Ok(datetime.date().and_hms(0, 0, 0))
+        })
+        .collect::<tera::Result<Vec<DateTime<Local>>>>()?;
+    let days: Vec<DateTime<Local>> = days.into_iter().unique().collect();
     Ok(tera::to_value(days)?)
 }
 
 pub fn tera_on_day(
     value: &tera::Value,
-    args: &HashMap<String, tera::Value>
+    args: &HashMap<String, tera::Value>,
 ) -> tera::Result<tera::Value> {
-    let dates: Vec<Date> = tera::from_value(value.clone())?;
-    let day = args.get("day").ok_or_else(|| tera::Error::msg("Missing required argument 'day'!"))?;
+    let day = args
+        .get("day")
+        .ok_or_else(|| tera::Error::msg("Missing required argument 'day'!"))?;
     let day = tera::from_value::<DateTime<Local>>(day.clone())?.date();
-    let filtered: Vec<Date> = dates.into_iter()
-        .filter(|date| date.from_date.date() == day)
-        .collect();
+
+    let array = value
+        .as_array()
+        .ok_or_else(|| tera::Error::msg("Invalid argument!"))?;
+    let filtered = array
+        .iter()
+        .map(|value| {
+            let date_value = value
+                .get("from_date")
+                .ok_or_else(|| tera::Error::msg("Invalid argument!"))?;
+            let datetime: DateTime<Local> = tera::from_value(date_value.clone())?;
+            Ok((value, datetime.date()))
+        })
+        .filter_ok(|(_, date)| *date == day)
+        .map_ok(|(value, _)| value.clone())
+        .collect::<tera::Result<Vec<tera::Value>>>()?;
+
     Ok(tera::to_value(filtered)?)
 }
 
@@ -133,17 +158,14 @@ fn rocket() -> _ {
             engines
                 .tera
                 .register_filter("format_date", tera_format_date);
-            engines
-                .tera
-                .register_filter("days", tera_days);
-                engines
-                    .tera
-                    .register_filter("on_day", tera_on_day);
+            engines.tera.register_filter("days", tera_days);
+            engines.tera.register_filter("on_day", tera_on_day);
         }))
         .attach(Database::init())
         .attach(AdHoc::config::<Config>())
         .manage(mailer)
         .register("/", catchers![auth::unauthorized_handler])
+        .register("/booking", catchers![user::date_gone_handler])
         .mount("/static", FileServer::from("static/"))
         .mount(
             "/",
@@ -160,12 +182,26 @@ fn rocket() -> _ {
                 auth::password_reset_post,
             ],
         )
-        .mount("/", routes![
-            admin::dashboard,
-            admin::date_new_1_get,
-            admin::date_new_1_post,
-            admin::date_new_2_post,
-            admin::room_manage_get,
-            admin::room_manage_post,
-        ])
+        .mount(
+            "/",
+            routes![
+                admin::dashboard,
+                admin::date_new_1_get,
+                admin::date_new_1_post,
+                admin::date_new_2_post,
+                admin::room_manage_get,
+                admin::room_manage_post,
+            ],
+        )
+        .mount(
+            "/",
+            routes![
+                user::index_get,
+                user::date_overview_get,
+                user::booking_new_get,
+                user::booking_new_post,
+                user::booking_delete_get,
+                user::booking_delete_post,
+            ],
+        )
 }

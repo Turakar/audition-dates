@@ -1,11 +1,8 @@
 - configuration
-- book time slot, token generation, update available time slots, personal data, prevent duplicate bookings
 - view bookings and personal data
-- edit booking via token per mail
-- edit bookings as admin
-- nice messages guiding through process
 - deployment
 - CSS styling, message types
 - cookie banner
 - edit profile
 - update lastlogin
+- minimum time before disabling bookings for a day

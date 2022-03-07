@@ -8,6 +8,7 @@
     {% endblock head %}
 </head>
 <body>
+    <a href="/">{{ fluent(key="home", lang=lang) }}</a>
     {% if messages %}
     <div id="messages">
         {% for message in messages %}

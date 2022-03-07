@@ -1,11 +1,13 @@
 brand = Collegium Musicum der RWTH Aachen
-title = Vorsingtermine - { brand }
+title = Vorsingtermine / Vorspieltermine - { brand }
 language = Deutsch
 
 date-type = Ensemble
 date-type-choir = Chor
 date-type-orchestra = Orchester
 voice = Stimme
+voice-male = Männliche Stimmlage
+voice-female = Weibliche Stimmlage
 voice-violin = Geige
 voice-trumpet = Trompete
 voice-horn = Horn
@@ -26,6 +28,7 @@ create = Erstellen
 yes = Ja
 no = Nein
 delete = Löschen
+home = Zurück zur Startseite
 
 validation-password = Das Passwort muss mindestens acht deutsche Zeichen enthalten, davon ein Kleinbuchstabe, ein Großbuchstabe, eine Ziffer und ein Sonderzeichen.
 validation-email = Die E-Mail-Adresse ist ungültig!
@@ -73,3 +76,27 @@ too-many-dates = Die angegebenen Daten würden zu mehr als 1000 Terminen führen
 room-manage = Räume erstellen und löschen
 room-deleted = Raum gelöscht.
 room-created = Raum erstellt.
+
+welcome-user = Willkommen zur Terminbuchung für die Vorsingen bzw. Vorspiele. Bitte wähle, für welches Ensemble du einen Termin buchen möchtest.
+no-dates = Keine Termine verfügbar.
+booking-new = Termin buchen
+day = Tag
+person-name = Dein voller Name
+notes = Bemerkungen
+booking-action = Buchen
+booking-success = Dein Termin wurde erfolgreich gebucht. Alle Infos werden dir per Mail zugeschickt.
+date-gone = Es tut uns leid, aber jemand anders war schneller als du und hat diesen Termin bereits gebucht. Bitte probiere es erneut.
+booking-delete = Buchung stornieren
+booking-delete-confirmation = Möchtest du den Termin wirklich löschen?
+booking-delete-confirmed = Termin storniert.
+
+mail-booking-subject = Vorsingen / Vorspiel Buchungsbestätigung
+mail-booking-body = Dein Termin wurde erfolgreich gebucht. Wir freuen uns auf dich!
+
+    Tag:  { $day }
+    Zeit: { $from } - { $to }
+    Raum: { $room }
+
+    Komm bitte ein paar Minuten früher.
+
+    Falls du nicht kommen kannst, bitten wir dich dringend den Termin wieder zu stornieren, damit andere ihn buchen können. Folge dazu bitte diesem Link:

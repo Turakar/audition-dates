@@ -26,6 +26,7 @@ create = Create
 yes = Yes
 no = No
 delete = Delete
+home = Back to the start page
 
 validation-password = Passwords must contain at least eight German, one lower case, one upper case, one digit and one special character!
 validation-email = E-Mail must be a well-formed e-mail address.
@@ -73,3 +74,27 @@ too-many-dates = The entered data would lead to more than 1000 dates, which is n
 room-manage = Delete and create rooms
 room-deleted = Room deleted.
 room-created = Room created.
+
+welcome-user = Welcome to the booking system for audition dates. Please select the ensemble you want to join.
+no-dates = No dates available.
+booking-new = Book audition date
+day = Day
+person-name = Your full name
+notes = Notes
+booking-action = Book
+booking-success = Your date was booked successfully. The information will be send to you via e-mail.
+date-gone = We are sorry, but someone else was faster than you and already booked this date. Please try again.
+booking-delete = Delete date
+booking-delete-confirmation = Do you really want to delete this date?
+booking-delete-confirmed = Date deleted.
+
+mail-booking-subject = Audition date booking confirmation
+mail-booking-body = Your audition date was booked successfully. We are looking forward to seeing you!
+
+    Day: { $day }
+    Time: { $from } - { $to }
+    Room: { $room_number }
+
+    Please come a few minutes early.
+
+    If you cannot come, we urgently ask you to cancel your date. To do so, please follow this link:

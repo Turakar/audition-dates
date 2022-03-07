@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use chrono::DateTime;
 use chrono::Duration;
 use chrono::Local;
 use rocket::form;
@@ -8,15 +9,24 @@ use rocket::response::Redirect;
 use rocket::serde::json::Json;
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::model::Room;
 use crate::model::validate_room;
-use crate::model::Date;
 use crate::model::FormDateTime;
 use crate::model::IntoInner;
 use crate::model::Message;
 use crate::model::MessageType;
+use crate::model::Room;
 use crate::{auth::Admin, language::Language, model::DateType, Database, RocketResult};
+
+#[derive(Serialize, Deserialize)]
+pub struct Date {
+    pub from_date: DateTime<Local>,
+    pub to_date: DateTime<Local>,
+    pub room_id: i32,
+    pub date_type: DateType,
+}
 
 #[get("/admin/dashboard")]
 pub async fn dashboard(
@@ -143,7 +153,6 @@ pub async fn date_new_1_post(
     let dates: Vec<Date> = (0..num_dates)
         .into_iter()
         .map(|i| Date {
-            id: None,
             from_date: from_date + Duration::minutes(interval) * i,
             to_date: from_date + Duration::minutes(interval) * (i + 1),
             room_id,
@@ -168,43 +177,64 @@ pub struct DateNew2Form {
 }
 
 #[post("/admin/date-new-2", data = "<form>")]
-pub async fn date_new_2_post(_admin: Admin, mut db: Connection<Database>, form: Form<DateNew2Form>) -> RocketResult<Redirect> {
-    let DateNew2Form { date_selected, dates } = form.into_inner();
-    let dates: Vec<Date> = dates.0.into_iter()
+pub async fn date_new_2_post(
+    _admin: Admin,
+    mut db: Connection<Database>,
+    form: Form<DateNew2Form>,
+) -> RocketResult<Redirect> {
+    let DateNew2Form {
+        date_selected,
+        dates,
+    } = form.into_inner();
+    let dates: Vec<Date> = dates
+        .0
+        .into_iter()
         .zip(date_selected.into_iter())
         .filter(|(_date, selected)| *selected)
         .map(|(date, _selected)| date)
         .collect();
-    
-    let invalid = dates.iter()
-        .any(|date| date.from_date > date.to_date || date.id.is_some());
+
+    let invalid = dates.iter().any(|date| date.from_date > date.to_date);
     if invalid {
         return Err(anyhow!("Invalid buffered dates!").into());
     }
 
     for date in dates {
-        let Date { from_date, to_date, room_id, date_type, .. } = date;
+        let Date {
+            from_date,
+            to_date,
+            room_id,
+            date_type,
+        } = date;
         sqlx::query!(
             "insert into dates (from_date, to_date, room_id, date_type) values ($1, $2, $3, $4)",
             &from_date,
             &to_date,
             &room_id,
             &date_type.get_value(),
-        ).execute(&mut *db).await?;
+        )
+        .execute(&mut *db)
+        .await?;
     }
 
     Ok(Redirect::to(uri!(dashboard)))
 }
 
 #[get("/admin/room-manage")]
-pub async fn room_manage_get(lang: Language, mut db: Connection<Database>, _admin: Admin) -> RocketResult<Template> {
-    let rooms: Vec<Room> = sqlx::query_as!(Room, "select id, room_number from rooms").fetch_all(&mut *db).await?;
+pub async fn room_manage_get(
+    lang: Language,
+    mut db: Connection<Database>,
+    _admin: Admin,
+) -> RocketResult<Template> {
+    let rooms: Vec<Room> = sqlx::query_as!(Room, "select id, room_number from rooms")
+        .fetch_all(&mut *db)
+        .await?;
     Ok(Template::render(
         "room-manage",
         context! {
             lang: lang.into_string(),
             rooms
-        }
+        },
     ))
 }
 
@@ -215,31 +245,52 @@ pub struct RoomManageForm<'r> {
 }
 
 #[post("/admin/room-manage", data = "<form>")]
-pub async fn room_manage_post(lang: Language, mut db: Connection<Database>, _admin: Admin, form: Form<RoomManageForm<'_>>) -> RocketResult<Template> {
-    let RoomManageForm { room_number, button } = form.into_inner();
+pub async fn room_manage_post(
+    lang: Language,
+    mut db: Connection<Database>,
+    _admin: Admin,
+    form: Form<RoomManageForm<'_>>,
+) -> RocketResult<Template> {
+    let RoomManageForm {
+        room_number,
+        button,
+    } = form.into_inner();
     let mut messages = Vec::new();
     if button == "create" {
-        sqlx::query!("insert into rooms (room_number) values ($1)", &room_number).execute(&mut *db).await?;
-        messages.push(Message { text_key: String::from("room-created"), message_type: MessageType::Success });
+        sqlx::query!("insert into rooms (room_number) values ($1)", &room_number)
+            .execute(&mut *db)
+            .await?;
+        messages.push(Message {
+            text_key: String::from("room-created"),
+            message_type: MessageType::Success,
+        });
     } else if button.starts_with("delete-") {
         let dash_position = button.chars().position(|c| c == '-').unwrap();
-        let id_str: String = button.chars()
-            .skip(dash_position + 1)
-            .collect();
+        let id_str: String = button.chars().skip(dash_position + 1).collect();
         let id = id_str.parse::<i32>()?;
-        sqlx::query!("delete from rooms where id = $1", &id).execute(&mut *db).await?;
-        messages.push(Message { text_key: String::from("room-deleted"), message_type: MessageType::Success });
+        sqlx::query!("delete from rooms where id = $1", &id)
+            .execute(&mut *db)
+            .await?;
+        messages.push(Message {
+            text_key: String::from("room-deleted"),
+            message_type: MessageType::Success,
+        });
     } else {
-        messages.push(Message { text_key: String::from("validation-unknown"), message_type: MessageType::Error });
+        messages.push(Message {
+            text_key: String::from("validation-unknown"),
+            message_type: MessageType::Error,
+        });
     }
 
-    let rooms: Vec<Room> = sqlx::query_as!(Room, "select id, room_number from rooms").fetch_all(&mut *db).await?;
+    let rooms: Vec<Room> = sqlx::query_as!(Room, "select id, room_number from rooms")
+        .fetch_all(&mut *db)
+        .await?;
     Ok(Template::render(
         "room-manage",
         context! {
             lang: lang.into_string(),
             rooms,
             messages,
-        }
+        },
     ))
 }

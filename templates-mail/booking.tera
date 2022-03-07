@@ -1,0 +1,3 @@
+{{ fluent(key="mail-booking-body", lang=lang, day=day, from=from, to=to, room=room_number) }}
+
+{{ link }}

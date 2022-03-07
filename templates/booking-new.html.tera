@@ -1,0 +1,38 @@
+{% extends "base" %}
+{% block content %}
+<h1>{{ fluent(key="booking-new", lang=lang) }}</h1>
+<table>
+    <tr>
+        <td>{{ fluent(key="day", lang=lang )}}:</td>
+        <td><span class="date">{{ date.from_date | format_date }}</span></td>
+    </tr>
+    <tr>
+        <td>{{ fluent(key="from-date", lang=lang) }}:</td>
+        <td><span class="time">{{ date.from_date | format_date }}</span></td>
+    </tr>
+    <tr>
+        <td>{{ fluent(key="to-date", lang=lang )}}:</td>
+        <td><span class="time">{{ date.to_date | format_date }}</span></td>
+    </tr>
+    <tr>
+        <td>{{ fluent(key="room", lang=lang )}}:</td>
+        <td>{{ date.room_number }}</td>
+    </tr>
+</table>
+<form method="post" class="pure-form pure-form-stacked">
+    <label for="email">{{ fluent(key="email", lang=lang) }}</label>
+    <input type="email" id="email" name="email" value="{{ email }}" placeholder="{{ fluent(key="email", lang=lang) }}" />
+    <label for="person_name">{{ fluent(key="person-name", lang=lang) }}</label>
+    <input type="person_name" id="person_name" name="person_name" value="{{ person_name }}" placeholder="{{ fluent(key="person-name", lang=lang) }}" />
+    <label for="voice">{{ fluent(key="voice", lang=lang) }}</label>
+    <select name="voice" id="voice">
+        <option value="">{{ fluent(key="please-select", lang=lang) }}</option>
+        {% for voice in voices %}
+            <option value="{{ voice.value }}">{{ fluent(key=voice.display_name, lang=lang) }}</option>
+        {% endfor %}
+    </select>
+    <label for="notes">{{ fluent(key="notes", lang=lang) }}</label>
+    <textarea id="notes" name="notes" value="{{ notes }}"></textarea>
+    <button type="submit">{{ fluent(key="booking-action", lang=lang) }}</button>
+</form>
+{% endblock content %}

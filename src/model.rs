@@ -4,6 +4,7 @@ use anyhow::anyhow;
 use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use lazy_regex::regex_is_match;
 use rocket::form::{self, error::ErrorKind, FromFormField, ValueField};
+use rocket::request::FromParam;
 use rocket_db_pools::Connection;
 use serde::{Deserialize, Serialize};
 use sqlx::{
@@ -72,7 +73,7 @@ impl<'r> FromFormField<'r> for DisplayName<'r> {
     }
 }
 
-pub struct Email<'r>(&'r str);
+pub struct Email<'r>(pub &'r str);
 
 impl<'r> IntoInner<&'r str> for Email<'r> {
     fn into_inner(self) -> &'r str {
@@ -201,6 +202,17 @@ macro_rules! interop_enum {
             }
         }
 
+        impl<'r> FromParam<'r> for $name {
+            type Error = &'r str;
+            fn from_param(param: &'r str) -> Result<Self, Self::Error> {
+                use $name::*;
+                match param {
+                    $($value => Ok($item_name)),+,
+                    _ => Err("Unknown date type!")
+                }
+            }
+        }
+
         impl <'r, DB: sqlx::Database> Decode<'r, DB> for $name where &'r str: Decode<'r, DB> {
             fn decode(value: <DB as HasValueRef<'r>>::ValueRef) -> Result<Self, Box<dyn Error + 'static + Send + Sync>> {
                 use $name::*;
@@ -259,17 +271,8 @@ impl DateType {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct Date {
-    pub id: Option<i32>,
-    pub from_date: DateTime<Local>,
-    pub to_date: DateTime<Local>,
-    pub room_id: i32,
-    pub date_type: DateType,
-}
-
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
 pub struct Room {
     pub id: i32,
-    pub room_number: String
+    pub room_number: String,
 }

@@ -13,8 +13,8 @@ create table dates (
 
 create table bookings (
     token text primary key default gen_random_uuid(),
-    date_id integer references dates (id),
-    email text not null unique,
+    date_id integer unique references dates (id),
+    email text not null,
     person_name text not null,
     notes text not null,
     voice text not null

@@ -1,0 +1,17 @@
+{% extends "base" %}
+{% block content %}
+<h1>{{ fluent(key=date_type.display_name, lang=lang) }}</h1>
+{% for day in dates | days %}
+    <b><span class="date">{{ day | format_date }}</span></b>
+    <br><br>
+    {% for date in dates | on_day(day=day) %}
+        <a href="/booking/new/{{ date.id }}" class="pure-button">
+            <span class="time">{{ date.from_date | format_date }}</span> - <span class="time">{{ date.to_date | format_date }}</span>,
+            {{ date.room_number }}
+        </a>
+        <br><br>
+    {% endfor %}
+{% else %}
+    <p>{{ fluent(key="no-dates", lang=lang) }}</p>
+{% endfor %}
+{% endblock content %}
