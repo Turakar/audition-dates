@@ -4,5 +4,4 @@
 - CSS styling, message types
 - cookie banner
 - edit profile
-- update lastlogin
 - minimum time before disabling bookings for a day

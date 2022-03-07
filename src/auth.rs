@@ -313,6 +313,7 @@ pub async fn login_post<'r>(
         .await?
     {
         Some(record) if verify_password(password, &record.password)? => {
+            sqlx::query!("update admins set last_login = now() where id = $1", &record.id).execute(&mut *db).await?;
             let valid_until = Utc::now() + Duration::days(7);
             let cookie_value = serde_json::to_string(&LoginCookie {
                 id: record.id,
