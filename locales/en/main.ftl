@@ -48,6 +48,8 @@ mail-invite-body = You were invited to the administration of the audition dates.
 
 dashboard = Admin Dashboard
 welcome = Welcome { $name }!
+not-booked = Date not booked.
+no-dates-dashboard = No audition dates.
 
 forgot-password = I forgot my password.
 password-reset = Password reset
@@ -79,7 +81,7 @@ welcome-user = Welcome to the booking system for audition dates. Please select t
 no-dates = No dates available.
 booking-new = Book audition date
 day = Day
-person-name = Your full name
+person-name = Name
 notes = Notes
 booking-action = Book
 booking-success = Your date was booked successfully. The information will be send to you via e-mail.

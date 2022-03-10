@@ -1,5 +1,6 @@
 use anyhow::anyhow;
 use anyhow::Result;
+use chrono::Duration;
 use chrono::{DateTime, Local};
 use lettre::AsyncTransport;
 use lettre::Message as EmailMessage;
@@ -53,7 +54,7 @@ pub async fn date_overview_get(
     date_type: DateType,
 ) -> RocketResult<Template> {
     let dates =
-        get_active_dates(&mut db, Some(date_type.get_value()), config.dates_per_day).await?;
+        get_active_dates(&mut db, Some(date_type.get_value()), config.dates_per_day, config.days_deadline).await?;
     Ok(Template::render(
         "date-overview",
         context! {
@@ -68,6 +69,7 @@ async fn get_active_dates(
     db: &mut Connection<Database>,
     date_type: Option<&str>,
     dates_per_day: usize,
+    days_deadline: u32,
 ) -> Result<Vec<Date>> {
     let mut dates: Vec<Date> = match date_type {
         Some(date_type) => sqlx::query!(
@@ -112,6 +114,11 @@ async fn get_active_dates(
         .collect(),
     };
 
+    let today = Local::today();
+    dates = dates.into_iter()
+        .filter(|date| date.from_date.date() >= today + Duration::days(days_deadline as i64))
+        .collect();
+
     if dates.is_empty() || dates_per_day == 0 {
         return Ok(dates);
     }
@@ -153,7 +160,7 @@ pub async fn booking_new_get(
     config: &State<Config>,
     id: i32,
 ) -> RocketResult<Result<Template, Status>> {
-    let available = get_active_dates(&mut db, None, config.dates_per_day).await?;
+    let available = get_active_dates(&mut db, None, config.dates_per_day, config.days_deadline).await?;
     let date = available.into_iter().find(|date| date.id == id);
 
     match date {
@@ -183,7 +190,7 @@ pub async fn booking_new_post(
 ) -> RocketResult<Result<Template, Status>> {
     let lang = lang.into_string();
 
-    let available = get_active_dates(&mut db, None, config.dates_per_day).await?;
+    let available = get_active_dates(&mut db, None, config.dates_per_day, config.days_deadline).await?;
     let date = match available.into_iter().find(|date| date.id == id) {
         None => return Ok(Err(Status::Gone)),
         Some(date) => date,

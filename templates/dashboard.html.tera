@@ -7,5 +7,57 @@
     <a class="pure-button" href="/admin/date-new-1">{{ fluent(key="date-new", lang=lang) }}</a>
     <a class="pure-button" href="/admin/room-manage">{{ fluent(key="room-manage", lang=lang) }}</a>
     <a class="pure-button" href="/admin/invite">{{ fluent(key="invite", lang=lang) }}</a>
+    {% if available_days | length > 0 %}
+        <select name="day" id="day">
+            {% for available_day in available_days %}
+                <option value="{{ available_day | format_date }}" class="date" {% if day == available_day %} selected {% endif %}>{{ available_day | format_date }}</option>
+            {% endfor %}
+        </select>
+    {% endif %}
 </div>
+
+<div>
+    {% for date in dates %}
+        <details>
+            {% if date.booking %}
+                <summary><span class="time">{{ date.from_date }}</span> - <span class="time">{{ date.to_date }}</span>, {{ date.room_number }}, {{ fluent(key=date.date_type.display_name, lang=lang) }}</summary>
+                <table>
+                    <tr>
+                        <td>{{ fluent(key="email", lang=lang) }}:</td>
+                        <td><a href="mailto:{{ date.booking.email }}">{{ date.booking.email }}</a></td>
+                    </tr>
+                    <tr>
+                        <td>{{ fluent(key="person-name", lang=lang) }}:</td>
+                        <td>{{ date.booking.person_name }}</td>
+                    </tr>
+                    <tr>
+                        <td>{{ fluent(key="voice", lang=lang) }}:</td>
+                        <td>{{ fluent(key=date.booking.voice.display_name, lang=lang) }}</td>
+                    </tr>
+                    <tr>
+                        <td>{{ fluent(key="notes", lang=lang) }}:</td>
+                        <td style="white-space: pre;">{{ date.booking.notes }}</td>
+                    </tr>
+                </table>
+            {% else %}
+                <summary><span style="color: #bcbcbc;"><span class="time">{{ date.from_date }}</span> - <span class="time">{{ date.to_date }}</span>, {{ date.room_number }}, {{ fluent(key=date.date_type.display_name, lang=lang) }}</span></summary>
+                <p>{{ fluent(key="not-booked", lang=lang) }}</p>
+            {% endif %}
+        </details>
+    {% else %}
+        <p>{{ fluent(key="no-dates-dashboard", lang=lang) }}</p>
+    {% endfor %}
+</div>
+
+<script type="module">
+const daySelector = document.getElementById("day");
+daySelector.addEventListener("change", (ev) => {
+    const value = ev.target.value;
+    if(value) {
+        let url = new URL(document.URL);
+        url.searchParams.set("day", daySelector.value);
+        window.location = url.toString();
+    }
+});
+</script>
 {% endblock content %}

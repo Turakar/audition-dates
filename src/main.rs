@@ -55,6 +55,7 @@ pub struct Config {
     email_from_address: String,
     web_address: String,
     dates_per_day: usize,
+    days_deadline: u32,
 }
 
 lazy_static! {

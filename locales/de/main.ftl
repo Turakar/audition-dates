@@ -50,6 +50,8 @@ mail-invite-body = Du wurdest zur Verwaltung der Vorsingtermine eingeladen. Bitt
 
 dashboard = Admin Dashboard
 welcome = Willkommen { $name }!
+not-booked = Termin nicht gebucht.
+no-dates-dashboard = Keine Termine.
 
 forgot-password = Ich habe mein Passwort vergessen.
 password-reset = Passwort Zurücksetzen
@@ -81,7 +83,7 @@ welcome-user = Willkommen zur Terminbuchung für die Vorsingen bzw. Vorspiele. B
 no-dates = Keine Termine verfügbar.
 booking-new = Termin buchen
 day = Tag
-person-name = Dein voller Name
+person-name = Name
 notes = Bemerkungen
 booking-action = Buchen
 booking-success = Dein Termin wurde erfolgreich gebucht. Alle Infos werden dir per Mail zugeschickt.

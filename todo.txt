@@ -1,7 +1,6 @@
-- configuration
-- view bookings and personal data
+- configuration mail
 - deployment
 - CSS styling, message types
 - cookie banner
 - edit profile
-- minimum time before disabling bookings for a day
+- announcements

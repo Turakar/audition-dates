@@ -162,7 +162,7 @@ pub async fn validate_room<'a>(
     })
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct InteropEnumTera {
     display_name: &'static str,
     value: &'static str,

@@ -331,7 +331,7 @@ pub async fn login_post<'r>(
             };
             cookies.add_private(cookie);
             let redirect = match redirect {
-                None => Redirect::to(uri!(crate::admin::dashboard)),
+                None => Redirect::to(uri!(crate::admin::dashboard(day = Option::<&str>::None))),
                 Some(redirect) => Redirect::to(String::from(redirect)),
             };
             Ok(Ok(redirect))

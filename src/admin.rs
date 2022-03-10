@@ -2,9 +2,12 @@ use anyhow::anyhow;
 use chrono::DateTime;
 use chrono::Duration;
 use chrono::Local;
+use chrono::NaiveDateTime;
+use chrono::TimeZone;
 use rocket::form;
 use rocket::form::Form;
 use rocket::form::FromForm;
+use rocket::request::FromParam;
 use rocket::response::Redirect;
 use rocket::serde::json::Json;
 use rocket_db_pools::Connection;
@@ -12,6 +15,8 @@ use rocket_dyn_templates::{context, Template};
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::model::InteropEnumTera;
+use crate::model::Voice;
 use crate::model::validate_room;
 use crate::model::FormDateTime;
 use crate::model::IntoInner;
@@ -28,19 +33,82 @@ pub struct Date {
     pub date_type: DateType,
 }
 
-#[get("/admin/dashboard")]
+
+#[derive(Serialize)]
+pub struct BookableDate {
+    pub id: i32,
+    pub from_date: DateTime<Local>,
+    pub to_date: DateTime<Local>,
+    pub room_number: String,
+    pub booking: Option<Booking>,
+    pub date_type: InteropEnumTera,
+}
+
+#[derive(Serialize)]
+pub struct Booking {
+    email: String,
+    person_name: String,
+    notes: String,
+    voice: InteropEnumTera,
+}
+
+#[get("/admin/dashboard?<day>")]
 pub async fn dashboard(
     lang: Language,
     admin: Admin,
     mut db: Connection<Database>,
+    day: Option<&str>,
 ) -> RocketResult<Template> {
     let display_name = sqlx::query!("select display_name from admins where id = $1", &admin.id)
         .fetch_one(&mut *db)
         .await?
         .display_name;
+    let day = match day {
+        Some(day) => NaiveDateTime::parse_from_str(day, crate::BROWSER_DATETIME_FORMAT)?,
+        None => match sqlx::query_scalar!(
+            "select min(from_date) from dates where from_date >= now()"
+        ).fetch_one(&mut *db).await? {
+            Some(date) => date.with_timezone(&Local).naive_local(),
+            None => Local::now().naive_local(),
+        },
+    };
+    let day = Local.from_local_datetime(&day).unwrap().date().and_hms(0, 0, 0);
+    println!("{:?}", &day);
+    let available_days: Vec<DateTime<Local>> = sqlx::query!(
+        r#"select distinct date_trunc('day', from_date) as "day!" from dates order by "day!" asc"#
+    ).fetch_all(&mut *db).await?.into_iter().map(|record| record.day.with_timezone(&Local).date().and_hms(0, 0, 0)).collect();
+    let dates: Vec<BookableDate> = sqlx::query!(
+        r#"select dates.id as dates_id, from_date, to_date, room_number, date_type, email as "email?", person_name as "person_name?", notes as "notes?", voice as "voice?"
+        from dates
+        join rooms on dates.room_id = rooms.id
+        left join bookings on bookings.date_id = dates.id
+        where $1 <= from_date and from_date <= $1 + interval '1 day'
+        order by from_date asc, date_type asc, room_number asc"#,
+        &day,
+    ).fetch_all(&mut *db).await?.into_iter()
+        .map(|record| {
+            let booking = match record.email.is_some() {
+                false => None,
+                true => Some(Booking {
+                    email: record.email.unwrap(),
+                    person_name: record.person_name.unwrap(),
+                    notes: record.notes.unwrap(),
+                    voice: Voice::from_param(&record.voice.unwrap()).unwrap().tera(),
+                })
+            };
+            BookableDate {
+                id: record.dates_id,
+                from_date: record.from_date.with_timezone(&Local),
+                to_date: record.to_date.with_timezone(&Local),
+                room_number: record.room_number,
+                booking,
+                date_type: DateType::from_param(&record.date_type).unwrap().tera(),
+            }
+        })
+        .collect();
     Ok(Template::render(
         "dashboard",
-        context! { lang: lang.into_string(), display_name },
+        context! { lang: lang.into_string(), display_name, dates, available_days, day },
     ))
 }
 
@@ -217,7 +285,7 @@ pub async fn date_new_2_post(
         .await?;
     }
 
-    Ok(Redirect::to(uri!(dashboard)))
+    Ok(Redirect::to(uri!(dashboard(day = Option::<&str>::None))))
 }
 
 #[get("/admin/room-manage")]
