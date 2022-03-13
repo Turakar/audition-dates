@@ -181,6 +181,7 @@ fn rocket() -> _ {
                 auth::password_reset_request_post,
                 auth::password_reset_get,
                 auth::password_reset_post,
+                auth::logout,
             ],
         )
         .mount(

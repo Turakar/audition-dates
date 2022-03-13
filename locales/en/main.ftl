@@ -29,6 +29,7 @@ no = No
 delete = Delete
 home = Back to the start page
 update = Update
+logout = Logout
 
 validation-password = Passwords must contain at least eight German, one lower case, one upper case, one digit and one special character!
 validation-email = E-Mail must be a well-formed e-mail address.

@@ -350,6 +350,12 @@ pub async fn login_post<'r>(
     }
 }
 
+#[get("/admin/logout")]
+pub async fn logout(cookies: &CookieJar<'_>) -> Redirect {
+    cookies.remove_private(Cookie::new("login", ""));
+    Redirect::to(uri!("/"))
+}
+
 #[derive(FromForm)]
 pub struct RequestPasswordResetForm<'r> {
     email: FormResult<'r, Email<'r>>,

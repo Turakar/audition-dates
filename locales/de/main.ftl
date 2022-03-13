@@ -31,6 +31,7 @@ no = Nein
 delete = Löschen
 home = Zurück zur Startseite
 update = Aktualisieren
+logout = Logout
 
 validation-password = Das Passwort muss mindestens acht deutsche Zeichen enthalten, davon ein Kleinbuchstabe, ein Großbuchstabe, eine Ziffer und ein Sonderzeichen.
 validation-email = Die E-Mail-Adresse ist ungültig!
