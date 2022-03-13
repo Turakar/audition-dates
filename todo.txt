@@ -2,5 +2,3 @@
 - deployment
 - CSS styling, message types
 - cookie banner
-- edit profile
-- announcements
