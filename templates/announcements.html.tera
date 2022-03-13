@@ -1,0 +1,17 @@
+{% extends "base" %}
+
+{% block content %}
+<h1>{{ fluent(key="announcements-manage", lang=lang) }}</h1>
+<form method="post" class="pure-form pure-form-stacked">
+    {% for key, group in announcements | group_by(attribute="position") %}
+        {% set announcement_l = group | filter(attribute="lang", value=lang) %}
+        <p>{{ announcement_l[0].description }}</p>
+        {% for announcement in group %}
+            {% set id = "announcements[" ~ announcement.position ~ "][" ~ announcement.lang ~ "]" %}
+            <label for="{{ id }}">{{ fluent(key="language", lang=announcement.lang) }}</label>
+            <textarea id="{{ id }}" name="{{ id }}">{{ announcement.content }}</textarea>
+        {% endfor %}
+    {% endfor %}
+    <button type="submit" class="pure-button pure-button-primary">{{ fluent(key="update", lang=lang) }}</button>
+</form>
+{% endblock content %}

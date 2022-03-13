@@ -1,6 +1,7 @@
 {% extends "base" %}
 {% block content %}
 <h1>{{ fluent(key="booking-new", lang=lang) }}</h1>
+<p class="announcement">{{ announcement }}</p>
 <table>
     <tr>
         <td>{{ fluent(key="day", lang=lang )}}:</td>
@@ -32,7 +33,7 @@
         {% endfor %}
     </select>
     <label for="notes">{{ fluent(key="notes", lang=lang) }}</label>
-    <textarea id="notes" name="notes" value="{{ notes }}"></textarea>
+    <textarea id="notes" name="notes">{{ notes }}</textarea>
     <button type="submit">{{ fluent(key="booking-action", lang=lang) }}</button>
 </form>
 {% endblock content %}

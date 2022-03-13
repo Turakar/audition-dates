@@ -2,6 +2,7 @@
 {% block content %}
 <h1>{{ fluent(key="title", lang=lang) }}</h1>
 <p>{{ fluent(key="welcome-user", lang=lang) }}</p>
+<p class="announcement">{{ announcement }}</p>
 <div>
     {% for date_type in date_types %}
         <a href="/{{date_type.value}}" class="pure-button pure-button-primary">{{ fluent(key=date_type.display_name, lang=lang) }}</a>

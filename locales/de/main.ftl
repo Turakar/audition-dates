@@ -29,6 +29,7 @@ yes = Ja
 no = Nein
 delete = Löschen
 home = Zurück zur Startseite
+update = Aktualisieren
 
 validation-password = Das Passwort muss mindestens acht deutsche Zeichen enthalten, davon ein Kleinbuchstabe, ein Großbuchstabe, eine Ziffer und ein Sonderzeichen.
 validation-email = Die E-Mail-Adresse ist ungültig!
@@ -78,6 +79,7 @@ too-many-dates = Die angegebenen Daten würden zu mehr als 1000 Terminen führen
 room-manage = Räume erstellen und löschen
 room-deleted = Raum gelöscht.
 room-created = Raum erstellt.
+announcements-manage = Ankündigungen verwalten
 
 welcome-user = Willkommen zur Terminbuchung für die Vorsingen bzw. Vorspiele. Bitte wähle, für welches Ensemble du einen Termin buchen möchtest.
 no-dates = Keine Termine verfügbar.

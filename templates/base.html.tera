@@ -3,6 +3,7 @@
 <head>
     {% block head %}
     <link rel="stylesheet" href="/static/pure.css" />
+    <link rel="stylesheet" href="/static/style.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ fluent(key="title", lang=lang) }}</title>
     {% endblock head %}

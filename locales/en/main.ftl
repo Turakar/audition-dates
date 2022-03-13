@@ -27,6 +27,7 @@ yes = Yes
 no = No
 delete = Delete
 home = Back to the start page
+update = Update
 
 validation-password = Passwords must contain at least eight German, one lower case, one upper case, one digit and one special character!
 validation-email = E-Mail must be a well-formed e-mail address.
@@ -76,6 +77,7 @@ too-many-dates = The entered data would lead to more than 1000 dates, which is n
 room-manage = Delete and create rooms
 room-deleted = Room deleted.
 room-created = Room created.
+announcements-manage = Manage announcements
 
 welcome-user = Welcome to the booking system for audition dates. Please select the ensemble you want to join.
 no-dates = No dates available.

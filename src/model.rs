@@ -162,6 +162,20 @@ pub async fn validate_room<'a>(
     })
 }
 
+pub async fn get_announcement(
+    position: &str,
+    lang: &str,
+    db: &mut Connection<Database>,
+) -> anyhow::Result<String> {
+    let content = sqlx::query_scalar!(
+        r#"select content from announcements
+        where position = ($1::text)::announcement_position and lang = ($2::text)::language"#,
+        &position,
+        &lang,
+    ).fetch_one(&mut **db).await?;
+    return Ok(content)
+}
+
 #[derive(Serialize)]
 pub struct InteropEnumTera {
     display_name: &'static str,

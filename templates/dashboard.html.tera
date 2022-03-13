@@ -6,6 +6,7 @@
 <div id="actions">
     <a class="pure-button" href="/admin/date-new-1">{{ fluent(key="date-new", lang=lang) }}</a>
     <a class="pure-button" href="/admin/room-manage">{{ fluent(key="room-manage", lang=lang) }}</a>
+    <a class="pure-button" href="/admin/announcements">{{ fluent(key="announcements-manage", lang=lang) }}</a>
     <a class="pure-button" href="/admin/invite">{{ fluent(key="invite", lang=lang) }}</a>
     {% if available_days | length > 0 %}
         <select name="day" id="day">

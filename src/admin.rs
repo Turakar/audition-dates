@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use anyhow::anyhow;
 use chrono::DateTime;
 use chrono::Duration;
@@ -361,4 +363,58 @@ pub async fn room_manage_post(
             messages,
         },
     ))
+}
+
+#[derive(FromForm)]
+pub struct AnnouncementsForm<'r> {
+    pub announcements: BTreeMap<&'r str, BTreeMap<&'r str, &'r str>>
+}
+
+#[derive(sqlx::FromRow, Serialize, Debug)]
+pub struct Announcement {
+    pub lang: String,
+    pub position: String,
+    pub description: String,
+    pub content: String,
+}
+
+#[get("/admin/announcements")]
+pub async fn announcements_get(
+    lang: Language,
+    mut db: Connection<Database>,
+) -> RocketResult<Template> {
+    let announcements = sqlx::query_as!(
+        Announcement,
+        r#"select lang::text as "lang!", position::text as "position!", description as "description!", content as "content!"
+        from announcements
+        order by position, lang"#
+    ).fetch_all(&mut *db).await?;
+    println!("{:?}", &announcements);
+    Ok(Template::render(
+        "announcements",
+        context! {
+            lang: lang.into_string(),
+            announcements
+        }
+    ))
+}
+
+#[post("/admin/announcements", data = "<form>")]
+pub async fn announcements_post(
+    mut db: Connection<Database>,
+    form: Form<AnnouncementsForm<'_>>,
+) -> RocketResult<Redirect> {
+    let AnnouncementsForm { announcements } = form.into_inner();
+    for (p, map) in announcements {
+        for (l, c) in map {
+            sqlx::query!(
+                "update announcements set content = $1 \
+                where position = ($2::text)::announcement_position and lang = ($3::text)::language",
+                &c,
+                &p,
+                &l,
+            ).execute(&mut *db).await?;
+        }
+    }
+    Ok(Redirect::to(uri!(announcements_get)))
 }

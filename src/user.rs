@@ -21,6 +21,7 @@ use crate::language::LOCALES;
 use crate::model::Message;
 use crate::model::MessageType;
 use crate::model::Voice;
+use crate::model::get_announcement;
 use crate::model::{DateType, Email};
 use crate::Mailer;
 use crate::MAIL_TEMPLATES;
@@ -36,14 +37,17 @@ pub struct Date {
 }
 
 #[get("/")]
-pub async fn index_get(lang: Language) -> Template {
-    Template::render(
+pub async fn index_get(lang: Language, mut db: Connection<Database>) -> RocketResult<Template> {
+    let lang = lang.into_string();
+    let announcement = get_announcement("general", &lang, &mut db).await?;
+    Ok(Template::render(
         "index",
         context! {
-            lang: lang.into_string(),
+            lang,
             date_types: DateType::get_variants_tera(),
+            announcement,
         },
-    )
+    ))
 }
 
 #[get("/<date_type>")]
@@ -55,12 +59,15 @@ pub async fn date_overview_get(
 ) -> RocketResult<Template> {
     let dates =
         get_active_dates(&mut db, Some(date_type.get_value()), config.dates_per_day, config.days_deadline).await?;
+    let lang = lang.into_string();
+    let announcement = get_announcement(date_type.get_value(), &lang, &mut db).await?;
     Ok(Template::render(
         "date-overview",
         context! {
-            lang: lang.into_string(),
+            lang,
             date_type: date_type.tera(),
             dates,
+            announcement,
         },
     ))
 }
@@ -162,20 +169,25 @@ pub async fn booking_new_get(
 ) -> RocketResult<Result<Template, Status>> {
     let available = get_active_dates(&mut db, None, config.dates_per_day, config.days_deadline).await?;
     let date = available.into_iter().find(|date| date.id == id);
+    let lang = lang.into_string();
 
     match date {
         None => Ok(Err(Status::Gone)),
-        Some(date) => Ok(Ok(Template::render(
-            "booking-new",
-            context! {
-                lang: lang.into_string(),
-                voices: date.date_type.get_voices_tera(),
-                date,
-                email: "",
-                person_name: "",
-                notes: "",
-            },
-        ))),
+        Some(date) => {
+            let announcement = get_announcement(date.date_type.get_value(), &lang, &mut db).await?;
+            Ok(Ok(Template::render(
+                "booking-new",
+                context! {
+                    lang,
+                    voices: date.date_type.get_voices_tera(),
+                    date,
+                    email: "",
+                    person_name: "",
+                    notes: "",
+                    announcement,
+                },
+            )))
+        },
     }
 }
 
@@ -195,6 +207,7 @@ pub async fn booking_new_post(
         None => return Ok(Err(Status::Gone)),
         Some(date) => date,
     };
+    let announcement = get_announcement(date.date_type.get_value(), &lang, &mut db).await?;
 
     match &form.value {
         None => {
@@ -222,6 +235,7 @@ pub async fn booking_new_post(
                     person_name: context.field_value("person").unwrap_or_default(),
                     notes: context.field_value("notes").unwrap_or_default(),
                     messages,
+                    announcement,
                 },
             )));
         }
@@ -261,6 +275,7 @@ pub async fn booking_new_post(
                 format!("{}", date.to_date.naive_local().format("%H:%M")).as_str(),
             );
             mail_context.insert("room_number", &date.room_number);
+            mail_context.insert("announcement", &announcement);
             let mail = EmailMessage::builder()
                 .to(email.parse()?)
                 .from(config.email_from_address.parse()?)
