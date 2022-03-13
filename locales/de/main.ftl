@@ -1,6 +1,7 @@
 brand = Collegium Musicum der RWTH Aachen
 title = Vorsingtermine / Vorspieltermine - { brand }
 language = Deutsch
+cookie-disclaimer = Diese Webseite verwendet Cookies, die zur Funktion notwendig sind.
 
 date-type = Ensemble
 date-type-choir = Chor
@@ -49,6 +50,7 @@ invite-invalid-token = Invalides Einladungs-Token!
 mail-invite-subject = Einladung zur Verwaltung der Vorsingtermine
 mail-invite-body = Du wurdest zur Verwaltung der Vorsingtermine eingeladen. Bitte besuche zur Registrierung folgenden Link:
 
+to-dashboard = Zum Admin-Dashboard
 dashboard = Admin Dashboard
 welcome = Willkommen { $name }!
 not-booked = Termin nicht gebucht.

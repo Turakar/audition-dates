@@ -1,6 +1,7 @@
 brand = Collegium Musicum of RWTH Aachen University
 title = Audition Dates - { brand }
 language = English
+cookie-disclaimer = This website uses cookies that are necessary for the functionality of this service.
 
 date-type = Ensemble
 date-type-choir = Choir
@@ -47,6 +48,7 @@ invite-invalid-token = Invalid invite token!
 mail-invite-subject = Invitation to audition dates administration
 mail-invite-body = You were invited to the administration of the audition dates. Please visit the following link for registration:
 
+to-dashboard = To the admin-dashboard
 dashboard = Admin Dashboard
 welcome = Welcome { $name }!
 not-booked = Date not booked.

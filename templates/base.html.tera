@@ -9,7 +9,8 @@
     {% endblock head %}
 </head>
 <body>
-    <a href="/">{{ fluent(key="home", lang=lang) }}</a>
+    <a href="/" class="pure-button">{{ fluent(key="home", lang=lang) }}</a>
+    <a href="/admin/dashboard" class="pure-button">{{ fluent(key="to-dashboard", lang=lang) }}</a>
     {% if messages %}
     <div id="messages">
         {% for message in messages %}
@@ -26,6 +27,7 @@
             {% endfor %}
         </select>
         <a href="https://www.cm.rwth-aachen.de">{{ fluent(key="brand", lang=lang) }}</a>
+        <p>{{ fluent(key="cookie-disclaimer", lang=lang) }}</p>
         {% endblock footer %}
     </div>
     <div style="display: none !important;" id="data-lang">{{ lang }}</div>

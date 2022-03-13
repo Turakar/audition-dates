@@ -1,4 +1,3 @@
 - configuration mail
 - deployment
 - CSS styling, message types
-- cookie banner
