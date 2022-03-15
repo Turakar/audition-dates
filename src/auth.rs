@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use anyhow::Context;
 use argon2::password_hash::SaltString;
 use argon2::Argon2;
 use argon2::PasswordHash;
@@ -6,6 +7,8 @@ use argon2::PasswordHasher;
 use argon2::PasswordVerifier;
 use chrono::DateTime;
 use chrono::{Duration, Utc};
+use lettre::message::header::ContentTransferEncoding;
+use lettre::message::IntoBody;
 use lettre::AsyncTransport;
 use lettre::Message as EmailMessage;
 use rand_core::OsRng;
@@ -24,6 +27,7 @@ use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
 use serde::Deserialize;
 use serde::Serialize;
+use lettre::message::header;
 
 use crate::Config;
 use crate::Database;
@@ -148,8 +152,16 @@ pub async fn invite_post<'r>(
                 .lookup_single_language::<&str>(&lang.parse()?, "mail-invite-subject", None)
                 .ok_or(anyhow!("Missing translation for mail-invite-subject!"))?,
         )
-        .body(MAIL_TEMPLATES.render("invite.tera", &mail_context)?)?;
-    mailer.send(mail).await?;
+        .header(header::ContentType::TEXT_PLAIN)
+        .body(
+            MAIL_TEMPLATES
+                .render("invite.tera", &mail_context)?
+                .into_body(Some(ContentTransferEncoding::Base64)),
+        )?;
+    mailer
+        .send(mail)
+        .await
+        .context("Could not send invitation mail!")?;
 
     Ok(Template::render(
         "invite",
@@ -313,7 +325,12 @@ pub async fn login_post<'r>(
         .await?
     {
         Some(record) if verify_password(password, &record.password)? => {
-            sqlx::query!("update admins set last_login = now() where id = $1", &record.id).execute(&mut *db).await?;
+            sqlx::query!(
+                "update admins set last_login = now() where id = $1",
+                &record.id
+            )
+            .execute(&mut *db)
+            .await?;
             let valid_until = Utc::now() + Duration::days(7);
             let cookie_value = serde_json::to_string(&LoginCookie {
                 id: record.id,
@@ -392,7 +409,6 @@ pub async fn password_reset_request_post<'r>(
         .fetch_optional(&mut *db)
         .await?
         .map(|record| record.id);
-    println!("admin ID: {:?}", &admin_id);
 
     if let Some(admin_id) = admin_id {
         let token = sqlx::query!(
@@ -424,7 +440,11 @@ pub async fn password_reset_request_post<'r>(
                         "Missing translation for mail-password-reset-subject!"
                     ))?,
             )
-            .body(MAIL_TEMPLATES.render("password-reset.tera", &mail_context)?)?;
+            .header(header::ContentType::TEXT_PLAIN)
+            .body(
+                MAIL_TEMPLATES
+                    .render("password-reset.tera", &mail_context)?
+                    .into_body(Some(ContentTransferEncoding::Base64)),)?;
         mailer.send(mail).await?;
     }
 
@@ -506,7 +526,11 @@ pub async fn password_reset_post<'r>(
                             "Missing translation for mail-password-was-reset-subject!"
                         ))?,
                 )
-                .body(MAIL_TEMPLATES.render("password-was-reset.tera", &mail_context)?)?;
+                .header(header::ContentType::TEXT_PLAIN)
+                .body(
+                    MAIL_TEMPLATES
+                        .render("password-was-reset.tera", &mail_context)?
+                        .into_body(Some(ContentTransferEncoding::Base64)),)?;
             mailer.send(mail).await?;
 
             Ok(Ok(Redirect::to(uri!(login_get(

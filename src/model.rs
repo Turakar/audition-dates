@@ -172,8 +172,10 @@ pub async fn get_announcement(
         where position = ($1::text)::announcement_position and lang = ($2::text)::language"#,
         &position,
         &lang,
-    ).fetch_one(&mut **db).await?;
-    return Ok(content)
+    )
+    .fetch_one(&mut **db)
+    .await?;
+    Ok(content)
 }
 
 #[derive(Serialize)]

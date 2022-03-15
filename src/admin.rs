@@ -17,14 +17,14 @@ use rocket_dyn_templates::{context, Template};
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::model::InteropEnumTera;
-use crate::model::Voice;
 use crate::model::validate_room;
 use crate::model::FormDateTime;
+use crate::model::InteropEnumTera;
 use crate::model::IntoInner;
 use crate::model::Message;
 use crate::model::MessageType;
 use crate::model::Room;
+use crate::model::Voice;
 use crate::{auth::Admin, language::Language, model::DateType, Database, RocketResult};
 
 #[derive(Serialize, Deserialize)]
@@ -34,7 +34,6 @@ pub struct Date {
     pub room_id: i32,
     pub date_type: DateType,
 }
-
 
 #[derive(Serialize)]
 pub struct BookableDate {
@@ -67,18 +66,30 @@ pub async fn dashboard(
         .display_name;
     let day = match day {
         Some(day) => NaiveDateTime::parse_from_str(day, crate::BROWSER_DATETIME_FORMAT)?,
-        None => match sqlx::query_scalar!(
-            "select min(from_date) from dates where from_date >= now()"
-        ).fetch_one(&mut *db).await? {
-            Some(date) => date.with_timezone(&Local).naive_local(),
-            None => Local::now().naive_local(),
-        },
+        None => {
+            match sqlx::query_scalar!("select min(from_date) from dates where from_date >= now()")
+                .fetch_one(&mut *db)
+                .await?
+            {
+                Some(date) => date.with_timezone(&Local).naive_local(),
+                None => Local::now().naive_local(),
+            }
+        }
     };
-    let day = Local.from_local_datetime(&day).unwrap().date().and_hms(0, 0, 0);
+    let day = Local
+        .from_local_datetime(&day)
+        .unwrap()
+        .date()
+        .and_hms(0, 0, 0);
     println!("{:?}", &day);
     let available_days: Vec<DateTime<Local>> = sqlx::query!(
         r#"select distinct date_trunc('day', from_date) as "day!" from dates order by "day!" asc"#
-    ).fetch_all(&mut *db).await?.into_iter().map(|record| record.day.with_timezone(&Local).date().and_hms(0, 0, 0)).collect();
+    )
+    .fetch_all(&mut *db)
+    .await?
+    .into_iter()
+    .map(|record| record.day.with_timezone(&Local).date().and_hms(0, 0, 0))
+    .collect();
     let dates: Vec<BookableDate> = sqlx::query!(
         r#"select dates.id as dates_id, from_date, to_date, room_number, date_type, email as "email?", person_name as "person_name?", notes as "notes?", voice as "voice?"
         from dates
@@ -367,7 +378,7 @@ pub async fn room_manage_post(
 
 #[derive(FromForm)]
 pub struct AnnouncementsForm<'r> {
-    pub announcements: BTreeMap<&'r str, BTreeMap<&'r str, &'r str>>
+    pub announcements: BTreeMap<&'r str, BTreeMap<&'r str, &'r str>>,
 }
 
 #[derive(sqlx::FromRow, Serialize, Debug)]
@@ -395,7 +406,7 @@ pub async fn announcements_get(
         context! {
             lang: lang.into_string(),
             announcements
-        }
+        },
     ))
 }
 
@@ -413,7 +424,9 @@ pub async fn announcements_post(
                 &c,
                 &p,
                 &l,
-            ).execute(&mut *db).await?;
+            )
+            .execute(&mut *db)
+            .await?;
         }
     }
     Ok(Redirect::to(uri!(announcements_get)))

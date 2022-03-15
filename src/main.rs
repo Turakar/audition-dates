@@ -10,20 +10,24 @@ extern crate rocket;
 #[macro_use]
 extern crate lazy_static;
 
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 use chrono::{DateTime, Local};
 use itertools::Itertools;
 use lettre::{AsyncSmtpTransport, Tokio1Executor};
 use rocket::{
-    fairing::AdHoc,
+    fairing::{self, AdHoc, Fairing},
     fs::FileServer,
-    request::Request,
-    response::{self, Responder},
+    request::{FromRequest, Request},
+    response::{self, Redirect, Responder},
 };
 use rocket_db_pools::{sqlx, Database as DatabaseTrait};
 use rocket_dyn_templates::Template;
 use serde::Deserialize;
+use sqlx::migrate::Migrator;
 use tera::Tera;
 
 pub type Mailer = AsyncSmtpTransport<Tokio1Executor>;
@@ -50,8 +54,43 @@ impl<'r> Responder<'r, 'r> for RocketError {
 #[database("database")]
 pub struct Database(sqlx::PgPool);
 
+static MIGRATOR: Migrator = sqlx::migrate!();
+
+pub struct MigrationFairing(AtomicBool);
+
+impl MigrationFairing {
+    pub fn new() -> Self {
+        MigrationFairing(AtomicBool::new(false))
+    }
+}
+
+impl Default for MigrationFairing {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[rocket::async_trait]
+impl Fairing for MigrationFairing {
+    fn info(&self) -> fairing::Info {
+        fairing::Info {
+            name: "Database Migration",
+            kind: fairing::Kind::Request,
+        }
+    }
+
+    async fn on_request(&self, request: &mut Request<'_>, _: &mut rocket::Data<'_>) {
+        if !self.0.swap(true, Ordering::SeqCst) {
+            let db = <&Database>::from_request(request).await.unwrap();
+            MIGRATOR.run(&db.0).await.unwrap();
+        }
+    }
+}
+
 #[derive(Deserialize)]
 pub struct Config {
+    email_host: String,
+    email_port: u16,
     email_from_address: String,
     web_address: String,
     dates_per_day: usize,
@@ -143,11 +182,14 @@ pub fn tera_on_day(
     Ok(tera::to_value(filtered)?)
 }
 
+#[get("/favicon.ico")]
+pub async fn favicon_get() -> Redirect {
+    Redirect::to("/static/favicon/favicon.ico")
+}
+
 #[launch]
 fn rocket() -> _ {
-    let mailer: Mailer = Mailer::unencrypted_localhost();
-
-    rocket::build()
+    let rocket = rocket::build()
         .attach(Template::custom(|engines| {
             engines
                 .tera
@@ -164,10 +206,11 @@ fn rocket() -> _ {
         }))
         .attach(Database::init())
         .attach(AdHoc::config::<Config>())
-        .manage(mailer)
+        .attach(MigrationFairing::new())
         .register("/", catchers![auth::unauthorized_handler])
         .register("/booking", catchers![user::date_gone_handler])
         .mount("/static", FileServer::from("static/"))
+        .mount("/", routes![favicon_get])
         .mount(
             "/",
             routes![
@@ -207,5 +250,13 @@ fn rocket() -> _ {
                 user::booking_delete_get,
                 user::booking_delete_post,
             ],
-        )
+        );
+
+    let config: Config = rocket.figment().extract().expect("config");
+
+    let mailer: Mailer = Mailer::builder_dangerous(config.email_host)
+        .port(config.email_port)
+        .build();
+    
+    rocket.manage(mailer)
 }

@@ -5,7 +5,7 @@
 <p class="announcement">{{ announcement }}</p>
 <div>
     {% for date_type in date_types %}
-        <a href="/{{date_type.value}}" class="pure-button pure-button-primary">{{ fluent(key=date_type.display_name, lang=lang) }}</a>
+        <a href="/dates/{{date_type.value}}" class="pure-button pure-button-primary">{{ fluent(key=date_type.display_name, lang=lang) }}</a>
     {% endfor %}
 </div>
 {% endblock content %}

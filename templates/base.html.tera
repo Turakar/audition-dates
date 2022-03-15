@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang={{ lang }}>
 <head>
-    {% block head %}
+    <meta charset="utf-8">
     <link rel="stylesheet" href="/static/pure.css" />
     <link rel="stylesheet" href="/static/style.css" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon/favicon-16x16.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ fluent(key="title", lang=lang) }}</title>
-    {% endblock head %}
 </head>
 <body>
     <div id="header">

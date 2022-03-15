@@ -12,6 +12,7 @@ services:
       POSTGRES_DB: audition_dates
   smtp:
     image: 'rnwood/smtp4dev:v3'
+    container_name: smtp
     ports:
       - '5000:80'
       - '25:25'

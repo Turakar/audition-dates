@@ -1,4 +1,6 @@
 [default]
+email_host = "localhost"
+email_port = 25
 email_from_address = "noreply@example.com"
 web_address = "http://localhost:8000"
 secret_key = "UZ/Q8SFljW9D7BQbTyIFWaYCZ4JOHczt7XMgdYXwJLk="

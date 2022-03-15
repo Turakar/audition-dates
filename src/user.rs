@@ -4,6 +4,9 @@ use chrono::Duration;
 use chrono::{DateTime, Local};
 use lettre::AsyncTransport;
 use lettre::Message as EmailMessage;
+use lettre::message::IntoBody;
+use lettre::message::header;
+use lettre::message::header::ContentTransferEncoding;
 use rocket::form::error::ErrorKind;
 use rocket::form::Contextual;
 use rocket::form::Form;
@@ -18,10 +21,10 @@ use rocket_dyn_templates::{context, Template};
 use serde::{Deserialize, Serialize};
 
 use crate::language::LOCALES;
+use crate::model::get_announcement;
 use crate::model::Message;
 use crate::model::MessageType;
 use crate::model::Voice;
-use crate::model::get_announcement;
 use crate::model::{DateType, Email};
 use crate::Mailer;
 use crate::MAIL_TEMPLATES;
@@ -50,15 +53,20 @@ pub async fn index_get(lang: Language, mut db: Connection<Database>) -> RocketRe
     ))
 }
 
-#[get("/<date_type>")]
+#[get("/dates/<date_type>")]
 pub async fn date_overview_get(
     lang: Language,
     mut db: Connection<Database>,
     config: &State<Config>,
     date_type: DateType,
 ) -> RocketResult<Template> {
-    let dates =
-        get_active_dates(&mut db, Some(date_type.get_value()), config.dates_per_day, config.days_deadline).await?;
+    let dates = get_active_dates(
+        &mut db,
+        Some(date_type.get_value()),
+        config.dates_per_day,
+        config.days_deadline,
+    )
+    .await?;
     let lang = lang.into_string();
     let announcement = get_announcement(date_type.get_value(), &lang, &mut db).await?;
     Ok(Template::render(
@@ -122,7 +130,8 @@ async fn get_active_dates(
     };
 
     let today = Local::today();
-    dates = dates.into_iter()
+    dates = dates
+        .into_iter()
         .filter(|date| date.from_date.date() >= today + Duration::days(days_deadline as i64))
         .collect();
 
@@ -167,7 +176,8 @@ pub async fn booking_new_get(
     config: &State<Config>,
     id: i32,
 ) -> RocketResult<Result<Template, Status>> {
-    let available = get_active_dates(&mut db, None, config.dates_per_day, config.days_deadline).await?;
+    let available =
+        get_active_dates(&mut db, None, config.dates_per_day, config.days_deadline).await?;
     let date = available.into_iter().find(|date| date.id == id);
     let lang = lang.into_string();
 
@@ -187,7 +197,7 @@ pub async fn booking_new_get(
                     announcement,
                 },
             )))
-        },
+        }
     }
 }
 
@@ -202,7 +212,8 @@ pub async fn booking_new_post(
 ) -> RocketResult<Result<Template, Status>> {
     let lang = lang.into_string();
 
-    let available = get_active_dates(&mut db, None, config.dates_per_day, config.days_deadline).await?;
+    let available =
+        get_active_dates(&mut db, None, config.dates_per_day, config.days_deadline).await?;
     let date = match available.into_iter().find(|date| date.id == id) {
         None => return Ok(Err(Status::Gone)),
         Some(date) => date,
@@ -288,7 +299,11 @@ pub async fn booking_new_post(
                         )
                         .ok_or(anyhow!("Missing translation for mail-booking-subject!"))?,
                 )
-                .body(MAIL_TEMPLATES.render("booking.tera", &mail_context)?)?;
+                .header(header::ContentType::TEXT_PLAIN)
+                .body(
+                    MAIL_TEMPLATES
+                        .render("booking.tera", &mail_context)?
+                        .into_body(Some(ContentTransferEncoding::Base64)),)?;
             mailer.send(mail).await?;
 
             Ok(Ok(Template::render(
@@ -314,21 +329,21 @@ pub async fn date_gone_handler(req: &Request<'_>) -> Template {
 
 #[get("/booking/delete/<_token>")]
 pub async fn booking_delete_get(lang: Language, _token: &str) -> Template {
-    Template::render(
-        "booking-delete",
-        context! { lang: lang.into_string() }
-    )
+    Template::render("booking-delete", context! { lang: lang.into_string() })
 }
 
 #[post("/booking/delete/<token>")]
-pub async fn booking_delete_post(lang: Language, mut db: Connection<Database>, token: &str) -> RocketResult<Template> {
-    sqlx::query!(
-        "delete from bookings where token = $1",
-        &token
-    ).execute(&mut *db).await?;
+pub async fn booking_delete_post(
+    lang: Language,
+    mut db: Connection<Database>,
+    token: &str,
+) -> RocketResult<Template> {
+    sqlx::query!("delete from bookings where token = $1", &token)
+        .execute(&mut *db)
+        .await?;
 
     Ok(Template::render(
         "booking-delete-confirm",
-        context! { lang: lang.into_string() }
+        context! { lang: lang.into_string() },
     ))
 }
