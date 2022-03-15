@@ -1,3 +1,38 @@
 .announcement {
     white-space: pre;
 }
+
+#content {
+    margin: 15pt;
+}
+
+#footer {
+    margin: 15pt;
+}
+
+#header {
+    margin: 15pt;
+}
+
+#messages {
+    padding: 5pt;
+}
+
+.message {
+    padding: 5pt;
+}
+
+.message-Success {
+    color: #407941;
+    background-color: #dff0d8;
+}
+
+.message-Info {
+    color: #377493;
+    background-color: #d9edf7;
+}
+
+.message-Error {
+    color: #a94442;
+    background-color: #f2dede;
+}

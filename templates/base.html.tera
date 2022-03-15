@@ -9,26 +9,26 @@
     {% endblock head %}
 </head>
 <body>
-    <a href="/" class="pure-button">{{ fluent(key="home", lang=lang) }}</a>
-    <a href="/admin/dashboard" class="pure-button">{{ fluent(key="to-dashboard", lang=lang) }}</a>
-    {% if messages %}
-    <div id="messages">
-        {% for message in messages %}
-            <div id="message">{{ fluent(key=message.text_key, lang=lang) }}</div>
-        {% endfor %}
+    <div id="header">
+        <a href="/" class="pure-button">{{ fluent(key="home", lang=lang) }}</a>
+        <a href="/admin/dashboard" class="pure-button">{{ fluent(key="to-dashboard", lang=lang) }}</a>
+        {% if messages %}
+        <div id="messages">
+            {% for message in messages %}
+                <div class="message message-{{message.message_type}}">{{ fluent(key=message.text_key, lang=lang) }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
     <div id="content">{% block content %}{% endblock content %}</div>
     <div id="footer">
-        {% block footer %}
+        <a href="https://www.cm.rwth-aachen.de">{{ fluent(key="brand", lang=lang) }}</a>
+        <p>{{ fluent(key="cookie-disclaimer", lang=lang) }}</p>
         <select id="language-selector">
             {% for language in supported_languages() %}
                 <option value="{{language}}" {% if lang == language %} selected {% endif %}>{{ fluent(key="language", lang=language) }}</option>
             {% endfor %}
         </select>
-        <a href="https://www.cm.rwth-aachen.de">{{ fluent(key="brand", lang=lang) }}</a>
-        <p>{{ fluent(key="cookie-disclaimer", lang=lang) }}</p>
-        {% endblock footer %}
     </div>
     <div style="display: none !important;" id="data-lang">{{ lang }}</div>
     <script type="module" src="/static/js.cookie.js"></script>

@@ -1,3 +1,2 @@
 - configuration mail
 - deployment
-- CSS styling, message types
