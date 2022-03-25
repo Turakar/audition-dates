@@ -33,7 +33,7 @@ logout = Logout
 
 validation-password = Passwords must contain at least eight German, one lower case, one upper case, one digit and one special character!
 validation-email = E-Mail must be a well-formed e-mail address.
-validation-display-name = The display name must contain at least eight German characters.
+validation-display-name = The display name must contain at least two German characters.
 validation-unknown = Invalid entry!
 validation-date = Invalid date!
 validation-date-ambiguous = The entered date is not unique. This can be caused by the summer / winter time transition.

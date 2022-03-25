@@ -65,10 +65,10 @@ impl<'r> IntoInner<&'r str> for DisplayName<'r> {
 impl<'r> FromFormField<'r> for DisplayName<'r> {
     fn from_value(field: ValueField<'r>) -> form::Result<'r, Self> {
         let value = field.value;
-        if regex_is_match!("[a-zA-Z0-9äöüß ]{8,}", value) {
+        if regex_is_match!("[a-zA-Z0-9äöüß ]{2,}", value) {
             Ok(DisplayName(value))
         } else {
-            Err(form::Error::validation("validation-username").into())
+            Err(form::Error::validation("validation-display-name").into())
         }
     }
 }

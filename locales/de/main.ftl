@@ -35,7 +35,7 @@ logout = Logout
 
 validation-password = Das Passwort muss mindestens acht deutsche Zeichen enthalten, davon ein Kleinbuchstabe, ein Großbuchstabe, eine Ziffer und ein Sonderzeichen.
 validation-email = Die E-Mail-Adresse ist ungültig!
-validation-display-name = Der Anzeigename muss mindestens acht deutsche Zeichen enthalten.
+validation-display-name = Der Anzeigename muss mindestens zwei deutsche Zeichen enthalten.
 validation-unknown = Ungültige Eingabe!
 validation-date = Ungültiges Datum!
 validation-date-ambiguous = Das eingegebene Datum ist nicht eindeutig. Dies kann z.B. durch die Zeitumstellung passieren.
