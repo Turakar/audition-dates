@@ -537,6 +537,26 @@
     },
     "query": "delete from password_resets where token = $1 returning admin_id"
   },
+  "c7ae77c5a0b51c7adc536bc1317bf02777db19e61a3676aefc08a91772e6f383": {
+    "describe": {
+      "columns": [
+        {
+          "name": "too_late!",
+          "ordinal": 0,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "select from_date < now() as \"too_late!\"\n        from dates\n        join bookings on dates.id = bookings.date_id\n        where bookings.token = $1"
+  },
   "d306e67eeb9fe489655593e9385d2508f666e989ea59ee0a831303bdedb1717e": {
     "describe": {
       "columns": [
