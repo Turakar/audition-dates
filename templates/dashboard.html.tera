@@ -22,7 +22,7 @@
     {% for date in dates %}
         <details>
             {% if date.booking %}
-                <summary><span class="time">{{ date.from_date }}</span> - <span class="time">{{ date.to_date }}</span>, {{ date.room_number }}, {{ fluent(key=date.date_type.display_name, lang=lang) }}</summary>
+                <summary><span class="time">{{ date.from_date | format_date }}</span> - <span class="time">{{ date.to_date | format_date }}</span>, {{ date.room_number }}, {{ fluent(key=date.date_type.display_name, lang=lang) }}</summary>
                 <table>
                     <tr>
                         <td>{{ fluent(key="email", lang=lang) }}:</td>
@@ -42,7 +42,7 @@
                     </tr>
                 </table>
             {% else %}
-                <summary><span style="color: #bcbcbc;"><span class="time">{{ date.from_date }}</span> - <span class="time">{{ date.to_date }}</span>, {{ date.room_number }}, {{ fluent(key=date.date_type.display_name, lang=lang) }}</span></summary>
+                <summary><span style="color: #bcbcbc;"><span class="time">{{ date.from_date | format_date }}</span> - <span class="time">{{ date.to_date | format_date }}</span>, {{ date.room_number }}, {{ fluent(key=date.date_type.display_name, lang=lang) }}</span></summary>
                 <p>{{ fluent(key="not-booked", lang=lang) }}</p>
             {% endif %}
         </details>

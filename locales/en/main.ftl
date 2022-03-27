@@ -94,6 +94,7 @@ date-gone = We are sorry, but someone else was faster than you and already booke
 booking-delete = Delete date
 booking-delete-confirmation = Do you really want to delete this date?
 booking-delete-confirmed = Date deleted.
+booking-delete-too-late = Past dates cannot be deleted.
 
 mail-booking-subject = Audition date booking confirmation
 mail-booking-body = Your audition date was booked successfully. We are looking forward to seeing you!

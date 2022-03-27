@@ -129,11 +129,19 @@ async fn get_active_dates(
         .collect(),
     };
 
-    let today = Local::today();
-    dates = dates
-        .into_iter()
-        .filter(|date| date.from_date.date() >= today + Duration::days(days_deadline as i64))
-        .collect();
+    if days_deadline > 0 {
+        let today = Local::today();
+        dates = dates
+            .into_iter()
+            .filter(|date| date.from_date.date() >= today + Duration::days(days_deadline as i64))
+            .collect();
+    } else {
+        let now = Local::now();
+        dates = dates
+            .into_iter()
+            .filter(|date| date.from_date >= now)
+            .collect();
+    }
 
     if dates.is_empty() || dates_per_day == 0 {
         return Ok(dates);
@@ -338,12 +346,32 @@ pub async fn booking_delete_post(
     mut db: Connection<Database>,
     token: &str,
 ) -> RocketResult<Template> {
-    sqlx::query!("delete from bookings where token = $1", &token)
-        .execute(&mut *db)
-        .await?;
 
-    Ok(Template::render(
-        "booking-delete-confirm",
-        context! { lang: lang.into_string() },
-    ))
+    let too_late: Option<bool> = sqlx::query_scalar!(
+        r#"select from_date < now() as "too_late!"
+        from dates
+        join bookings on dates.id = bookings.date_id
+        where bookings.token = $1"#, &token).fetch_optional(&mut *db).await?;
+
+    match too_late {
+        Some(true) => Ok(Template::render(
+            "booking-delete",
+            context! { lang: lang.into_string(), messages: [Message { text_key: String::from("booking-delete-too-late"), message_type: MessageType::Error }] },
+        )),
+        Some(false) => {
+            sqlx::query!("delete from bookings where token = $1", &token)
+                .execute(&mut *db)
+                .await?;
+            Ok(Template::render(
+                "booking-delete-confirm",
+                context! { lang: lang.into_string() },
+            ))
+        },
+        None => {
+            Ok(Template::render(
+                "booking-delete-confirm",
+                context! { lang: lang.into_string() },
+            ))
+        }
+    }
 }

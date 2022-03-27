@@ -96,6 +96,7 @@ date-gone = Es tut uns leid, aber jemand anders war schneller als du und hat die
 booking-delete = Buchung stornieren
 booking-delete-confirmation = Möchtest du den Termin wirklich löschen?
 booking-delete-confirmed = Termin storniert.
+booking-delete-too-late = Termine können nicht im Nachhinein storniert werden.
 
 mail-booking-subject = Vorsingen / Vorspiel Buchungsbestätigung
 mail-booking-body = Dein Termin wurde erfolgreich gebucht. Wir freuen uns auf dich!
