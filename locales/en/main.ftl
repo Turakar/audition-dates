@@ -101,7 +101,7 @@ mail-booking-body = Your audition date was booked successfully. We are looking f
 
     Day: { $day }
     Time: { $from } - { $to }
-    Room: { $room_number }
+    Room: { $room }
 
     Please come a few minutes early.
 
