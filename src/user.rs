@@ -2,11 +2,11 @@ use anyhow::anyhow;
 use anyhow::Result;
 use chrono::Duration;
 use chrono::{DateTime, Local};
-use lettre::AsyncTransport;
-use lettre::Message as EmailMessage;
-use lettre::message::IntoBody;
 use lettre::message::header;
 use lettre::message::header::ContentTransferEncoding;
+use lettre::message::IntoBody;
+use lettre::AsyncTransport;
+use lettre::Message as EmailMessage;
 use rocket::form::error::ErrorKind;
 use rocket::form::Contextual;
 use rocket::form::Form;
@@ -311,7 +311,8 @@ pub async fn booking_new_post(
                 .body(
                     MAIL_TEMPLATES
                         .render("booking.tera", &mail_context)?
-                        .into_body(Some(ContentTransferEncoding::Base64)),)?;
+                        .into_body(Some(ContentTransferEncoding::Base64)),
+                )?;
             mailer.send(mail).await?;
 
             Ok(Ok(Template::render(
@@ -346,12 +347,15 @@ pub async fn booking_delete_post(
     mut db: Connection<Database>,
     token: &str,
 ) -> RocketResult<Template> {
-
     let too_late: Option<bool> = sqlx::query_scalar!(
         r#"select from_date < now() as "too_late!"
         from dates
         join bookings on dates.id = bookings.date_id
-        where bookings.token = $1"#, &token).fetch_optional(&mut *db).await?;
+        where bookings.token = $1"#,
+        &token
+    )
+    .fetch_optional(&mut *db)
+    .await?;
 
     match too_late {
         Some(true) => Ok(Template::render(
@@ -366,12 +370,10 @@ pub async fn booking_delete_post(
                 "booking-delete-confirm",
                 context! { lang: lang.into_string() },
             ))
-        },
-        None => {
-            Ok(Template::render(
-                "booking-delete-confirm",
-                context! { lang: lang.into_string() },
-            ))
         }
+        None => Ok(Template::render(
+            "booking-delete-confirm",
+            context! { lang: lang.into_string() },
+        )),
     }
 }

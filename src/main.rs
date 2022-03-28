@@ -257,6 +257,6 @@ fn rocket() -> _ {
     let mailer: Mailer = Mailer::builder_dangerous(config.email_host)
         .port(config.email_port)
         .build();
-    
+
     rocket.manage(mailer)
 }

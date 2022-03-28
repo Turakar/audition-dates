@@ -7,6 +7,7 @@ use argon2::PasswordHasher;
 use argon2::PasswordVerifier;
 use chrono::DateTime;
 use chrono::{Duration, Utc};
+use lettre::message::header;
 use lettre::message::header::ContentTransferEncoding;
 use lettre::message::IntoBody;
 use lettre::AsyncTransport;
@@ -27,7 +28,6 @@ use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
 use serde::Deserialize;
 use serde::Serialize;
-use lettre::message::header;
 
 use crate::Config;
 use crate::Database;
@@ -444,7 +444,8 @@ pub async fn password_reset_request_post<'r>(
             .body(
                 MAIL_TEMPLATES
                     .render("password-reset.tera", &mail_context)?
-                    .into_body(Some(ContentTransferEncoding::Base64)),)?;
+                    .into_body(Some(ContentTransferEncoding::Base64)),
+            )?;
         mailer.send(mail).await?;
     }
 
@@ -530,7 +531,8 @@ pub async fn password_reset_post<'r>(
                 .body(
                     MAIL_TEMPLATES
                         .render("password-was-reset.tera", &mail_context)?
-                        .into_body(Some(ContentTransferEncoding::Base64)),)?;
+                        .into_body(Some(ContentTransferEncoding::Base64)),
+                )?;
             mailer.send(mail).await?;
 
             Ok(Ok(Redirect::to(uri!(login_get(

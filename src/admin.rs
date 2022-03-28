@@ -400,7 +400,6 @@ pub async fn announcements_get(
         from announcements
         order by position, lang"#
     ).fetch_all(&mut *db).await?;
-    println!("{:?}", &announcements);
     Ok(Template::render(
         "announcements",
         context! {
