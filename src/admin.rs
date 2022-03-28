@@ -81,7 +81,6 @@ pub async fn dashboard(
         .unwrap()
         .date()
         .and_hms(0, 0, 0);
-    println!("{:?}", &day);
     let available_days: Vec<DateTime<Local>> = sqlx::query!(
         r#"select distinct date_trunc('day', from_date) as "day!" from dates order by "day!" asc"#
     )
