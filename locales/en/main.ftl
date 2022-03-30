@@ -103,6 +103,4 @@ mail-booking-body = Your audition date was booked successfully. We are looking f
     Time: { $from } - { $to }
     Room: { $room }
 
-    Please come a few minutes early.
-
     If you cannot come, we urgently ask you to cancel your date. To do so, please follow this link:

@@ -105,6 +105,4 @@ mail-booking-body = Dein Termin wurde erfolgreich gebucht. Wir freuen uns auf di
     Zeit: { $from } - { $to }
     Raum: { $room }
 
-    Komm bitte ein paar Minuten früher.
-
     Falls du nicht kommen kannst, bitten wir dich dringend den Termin wieder zu stornieren, damit andere ihn buchen können. Folge dazu bitte diesem Link:
