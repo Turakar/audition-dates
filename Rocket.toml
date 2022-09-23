@@ -4,7 +4,7 @@ email_port = 25
 email_from_address = "noreply@example.com"
 web_address = "http://localhost:8000"
 secret_key = "UZ/Q8SFljW9D7BQbTyIFWaYCZ4JOHczt7XMgdYXwJLk="
-dates_per_day = 5
+dates_per_day = 3
 days_deadline = 1
 
 [default.databases.database]
