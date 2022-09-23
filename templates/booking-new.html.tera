@@ -24,12 +24,12 @@
     <label for="email">{{ fluent(key="email", lang=lang) }}</label>
     <input type="email" id="email" name="email" value="{{ email }}" placeholder="{{ fluent(key="email", lang=lang) }}" />
     <label for="person_name">{{ fluent(key="person-name", lang=lang) }}</label>
-    <input type="person_name" id="person_name" name="person_name" value="{{ person_name }}" placeholder="{{ fluent(key="person-name", lang=lang) }}" />
+    <input type="text" id="person_name" name="person_name" value="{{ person_name }}" placeholder="{{ fluent(key="person-name", lang=lang) }}" />
     <label for="voice">{{ fluent(key="voice", lang=lang) }}</label>
     <select name="voice" id="voice">
         <option value="">{{ fluent(key="please-select", lang=lang) }}</option>
         {% for voice in voices %}
-            <option value="{{ voice.value }}">{{ fluent(key=voice.display_name, lang=lang) }}</option>
+            <option value="{{ voice.value }}" {% if voice_selected == voice.value %} selected {% endif %}>{{ fluent(key=voice.display_name, lang=lang) }}</option>
         {% endfor %}
     </select>
     <label for="notes">{{ fluent(key="notes", lang=lang) }}</label>

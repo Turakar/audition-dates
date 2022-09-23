@@ -202,6 +202,7 @@ pub async fn booking_new_get(
                     email: "",
                     person_name: "",
                     notes: "",
+                    voice_selected: "",
                     announcement,
                 },
             )))
@@ -249,10 +250,12 @@ pub async fn booking_new_post(
                 "booking-new",
                 context! {
                     lang,
+                    voices: date.date_type.get_voices_tera(),
                     date,
                     email: context.field_value("email").unwrap_or_default(),
-                    person_name: context.field_value("person").unwrap_or_default(),
+                    person_name: context.field_value("person_name").unwrap_or_default(),
                     notes: context.field_value("notes").unwrap_or_default(),
+                    voice_selected: context.field_value("voice").unwrap_or_default(),
                     messages,
                     announcement,
                 },
