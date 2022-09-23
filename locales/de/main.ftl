@@ -6,12 +6,17 @@ cookie-disclaimer = Diese Webseite verwendet Cookies, die zur Funktion notwendig
 date-type = Ensemble
 date-type-choir = Chor
 date-type-orchestra = Orchester
+date-type-chamber-choir = Kammerchor
 voice = Stimme
 voice-male = Männliche Stimmlage
 voice-female = Weibliche Stimmlage
 voice-violin = Geige
 voice-trumpet = Trompete
 voice-horn = Horn
+voice-soprano = Sopran
+voice-alto = Alt
+voice-tenor = Tenor
+voice-bass = Bass
 
 login = Login
 remember-me = Angemeldet bleiben

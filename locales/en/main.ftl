@@ -6,10 +6,17 @@ cookie-disclaimer = This website uses cookies that are necessary for the functio
 date-type = Ensemble
 date-type-choir = Choir
 date-type-orchestra = Orchestra
+date-type-chamber-choir = Chamber Choir
 voice = Voice
+voice-male = Male voice
+voice-female = Female voice
 voice-violin = Violin
 voice-trumpet = Trumpet
 voice-horn = Horn
+voice-soprano = Soprano
+voice-alto = Alto
+voice-tenor = Tenor
+voice-bass = Bass
 
 login = Login
 remember-me = Remember me
