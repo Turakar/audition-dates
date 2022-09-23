@@ -131,16 +131,10 @@ async fn get_active_dates(
 
     if days_deadline > 0 {
         let today = Local::today();
-        dates = dates
-            .into_iter()
-            .filter(|date| date.from_date.date() >= today + Duration::days(days_deadline as i64))
-            .collect();
+        dates.retain(|date| date.from_date.date() >= today + Duration::days(days_deadline as i64));
     } else {
         let now = Local::now();
-        dates = dates
-            .into_iter()
-            .filter(|date| date.from_date >= now)
-            .collect();
+        dates.retain(|date| date.from_date >= now);
     }
 
     if dates.is_empty() || dates_per_day == 0 {
@@ -246,7 +240,7 @@ pub async fn booking_new_post(
                 })
                 .collect();
 
-            return Ok(Ok(Template::render(
+            Ok(Ok(Template::render(
                 "booking-new",
                 context! {
                     lang,
@@ -259,7 +253,7 @@ pub async fn booking_new_post(
                     messages,
                     announcement,
                 },
-            )));
+            )))
         }
         Some(BookingForm {
             email: Email(email),
@@ -308,7 +302,7 @@ pub async fn booking_new_post(
                             "mail-booking-subject",
                             None,
                         )
-                        .ok_or(anyhow!("Missing translation for mail-booking-subject!"))?,
+                        .ok_or_else(|| anyhow!("Missing translation for mail-booking-subject!"))?,
                 )
                 .header(header::ContentType::TEXT_PLAIN)
                 .body(

@@ -150,7 +150,7 @@ pub async fn invite_post<'r>(
         .subject(
             LOCALES
                 .lookup_single_language::<&str>(&lang.parse()?, "mail-invite-subject", None)
-                .ok_or(anyhow!("Missing translation for mail-invite-subject!"))?,
+                .ok_or_else(|| anyhow!("Missing translation for mail-invite-subject!"))?,
         )
         .header(header::ContentType::TEXT_PLAIN)
         .body(
@@ -436,9 +436,9 @@ pub async fn password_reset_request_post<'r>(
                         "mail-password-reset-subject",
                         None,
                     )
-                    .ok_or(anyhow!(
-                        "Missing translation for mail-password-reset-subject!"
-                    ))?,
+                    .ok_or_else(|| {
+                        anyhow!("Missing translation for mail-password-reset-subject!")
+                    })?,
             )
             .header(header::ContentType::TEXT_PLAIN)
             .body(
@@ -523,9 +523,9 @@ pub async fn password_reset_post<'r>(
                             "mail-password-was-reset-subject",
                             None,
                         )
-                        .ok_or(anyhow!(
-                            "Missing translation for mail-password-was-reset-subject!"
-                        ))?,
+                        .ok_or_else(|| {
+                            anyhow!("Missing translation for mail-password-was-reset-subject!")
+                        })?,
                 )
                 .header(header::ContentType::TEXT_PLAIN)
                 .body(
