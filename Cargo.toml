@@ -9,21 +9,18 @@ edition = "2021"
 opt-level = 3
 
 [dependencies]
-# rocket = { git = "https://github.com/SergioBenitez/Rocket", features = ["secrets", "json"] }
-# rocket_db_pools = { git = "https://github.com/SergioBenitez/Rocket", features = ["sqlx_postgres"] }
-# rocket_dyn_templates = { git = "https://github.com/SergioBenitez/Rocket", features = ["tera"] }
 rocket = { version = "0.5.0-rc.2", features = ["secrets", "json"] }
 rocket_db_pools = { version = "0.1.0-rc.2", features = ["sqlx_postgres"] }
+sqlx = { version = "0.5", features = ["postgres", "chrono", "offline", "migrate", "runtime-tokio-rustls"] }  # should be matched with rocket_db_pools
 rocket_dyn_templates = { version = "0.1.0-rc.2", features = ["tera"] }
-fluent-templates = { version = "0.6", features = ["tera"] }
+fluent-templates = { version = "0.8", features = ["tera"] }
 accept-language = "2.0"
 lettre = { version = "0.10.0-rc.4", features = ["builder", "tokio1-native-tls"] }
 anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-sqlx = { version = "0.5", features = ["postgres", "chrono", "offline", "migrate"] }
 tera = "1"
 lazy_static = "1"
-argon2 = "0.3"
+argon2 = "0.4"
 rand_core = { version = "0.6", features = ["std"] }
 chrono = { version = "0.4", features = ["serde"] }
 serde_json = "1"
