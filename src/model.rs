@@ -277,7 +277,7 @@ impl DateType {
         &[
             DateType::Choir,
             // DateType::Orchestra,
-            DateType::ChamberChoir,
+            // DateType::ChamberChoir,
         ]
     }
 
