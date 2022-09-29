@@ -167,21 +167,25 @@ pub async fn date_cancel_post(
     for (email, lang) in emails {
         println!("{:?}, {}", explanations, lang);
         let explanation = explanations[&lang];
-        let mail = EmailMessage::builder()
-            .to(email.parse()?)
-            .from(config.email_from_address.parse()?)
-            .subject(
-                LOCALES
-                    .lookup_single_language::<&str>(
-                        &lang.parse()?,
-                        "mail-date-cancel-subject",
-                        None,
-                    )
-                    .ok_or_else(|| anyhow!("Missing translation for mail-date-cancel-subject!"))?,
-            )
-            .header(header::ContentType::TEXT_PLAIN)
-            .body(String::from(explanation))?;
-        mailer.send(mail).await?;
+        if !explanation.is_empty() {
+            let mail = EmailMessage::builder()
+                .to(email.parse()?)
+                .from(config.email_from_address.parse()?)
+                .subject(
+                    LOCALES
+                        .lookup_single_language::<&str>(
+                            &lang.parse()?,
+                            "mail-date-cancel-subject",
+                            None,
+                        )
+                        .ok_or_else(|| {
+                            anyhow!("Missing translation for mail-date-cancel-subject!")
+                        })?,
+                )
+                .header(header::ContentType::TEXT_PLAIN)
+                .body(String::from(explanation))?;
+            mailer.send(mail).await?;
+        }
     }
     for date in &dates {
         sqlx::query!("delete from dates where id = $1", &date)
