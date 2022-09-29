@@ -30,19 +30,19 @@
                         <table>
                             <tr>
                                 <td>{{ fluent(key="email", lang=lang) }}:</td>
-                                <td><a href="mailto:{{ date.booking.email }}">{{ date.booking.email }}</a></td>
+                                <td style="word-break: break-all;"><a href="mailto:{{ date.booking.email }}">{{ date.booking.email }}</a></td>
                             </tr>
                             <tr>
                                 <td>{{ fluent(key="person-name", lang=lang) }}:</td>
-                                <td>{{ date.booking.person_name }}</td>
+                                <td style="word-break: break-word;">{{ date.booking.person_name }}</td>
                             </tr>
                             <tr>
                                 <td>{{ fluent(key="voice", lang=lang) }}:</td>
-                                <td>{{ fluent(key=date.booking.voice.display_name, lang=lang) }}</td>
+                                <td style="word-break: break-word;">{{ fluent(key=date.booking.voice.display_name, lang=lang) }}</td>
                             </tr>
                             <tr>
                                 <td>{{ fluent(key="notes", lang=lang) }}:</td>
-                                <td style="white-space: pre;">{{ date.booking.notes }}</td>
+                                <td style="word-break: break-word;">{{ date.booking.notes }}</td>
                             </tr>
                         </table>
                     {% else %}
