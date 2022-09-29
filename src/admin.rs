@@ -6,6 +6,9 @@ use chrono::Duration;
 use chrono::Local;
 use chrono::NaiveDateTime;
 use chrono::TimeZone;
+use lettre::message::header;
+use lettre::AsyncTransport;
+use lettre::Message as EmailMessage;
 use rocket::form;
 use rocket::form::Form;
 use rocket::form::FromForm;
@@ -17,9 +20,6 @@ use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
 use serde::Deserialize;
 use serde::Serialize;
-use lettre::message::header;
-use lettre::AsyncTransport;
-use lettre::Message as EmailMessage;
 
 use crate::language::LOCALES;
 use crate::model::validate_room;
@@ -30,9 +30,9 @@ use crate::model::Message;
 use crate::model::MessageType;
 use crate::model::Room;
 use crate::model::Voice;
-use crate::{auth::Admin, language::Language, model::DateType, Database, RocketResult};
-use crate::Mailer;
 use crate::Config;
+use crate::Mailer;
+use crate::{auth::Admin, language::Language, model::DateType, Database, RocketResult};
 
 #[derive(Serialize, Deserialize)]
 pub struct Date {
@@ -133,10 +133,7 @@ pub async fn dashboard(
 
 #[get("/admin/date-cancel?<dates>")]
 pub async fn date_cancel_get(lang: Language, _admin: Admin, dates: Vec<i32>) -> Template {
-    Template::render(
-        "date-cancel",
-        context! { lang: lang.into_string(), dates },
-    )
+    Template::render("date-cancel", context! { lang: lang.into_string(), dates })
 }
 
 #[derive(FromForm)]
@@ -146,21 +143,25 @@ pub struct DateCancelForm<'r> {
 }
 
 #[post("/admin/date-cancel", data = "<form>")]
-pub async fn date_cancel_post(_admin: Admin, mut db: Connection<Database>,
+pub async fn date_cancel_post(
+    _admin: Admin,
+    mut db: Connection<Database>,
     config: &State<Config>,
     mailer: &State<Mailer>,
-    form: Form<DateCancelForm<'_>>) -> RocketResult<Redirect> {
+    form: Form<DateCancelForm<'_>>,
+) -> RocketResult<Redirect> {
     let DateCancelForm {
-        dates, explanations
+        dates,
+        explanations,
     } = form.into_inner();
     let mut emails = Vec::new();
     for date in &dates {
         emails.extend(
             sqlx::query!("select email, lang from bookings where date_id = $1", &date)
-            .fetch_all(&mut *db)
-            .await?
-            .into_iter()
-            .map(|record| (record.email, record.lang))
+                .fetch_all(&mut *db)
+                .await?
+                .into_iter()
+                .map(|record| (record.email, record.lang)),
         );
     }
     for (email, lang) in emails {
@@ -183,7 +184,9 @@ pub async fn date_cancel_post(_admin: Admin, mut db: Connection<Database>,
         mailer.send(mail).await?;
     }
     for date in &dates {
-        sqlx::query!("delete from dates where id = $1", &date).execute(&mut *db).await?;
+        sqlx::query!("delete from dates where id = $1", &date)
+            .execute(&mut *db)
+            .await?;
     }
     Ok(Redirect::to(uri!(dashboard(day = Option::<&str>::None))))
 }
