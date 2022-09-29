@@ -18,38 +18,48 @@
     <a class="pure-button" href="/admin/logout">{{ fluent(key="logout", lang=lang) }}</a>
 </div>
 
-<div>
-    {% for date in dates %}
-        <details>
-            {% if date.booking %}
-                <summary><span class="time">{{ date.from_date | format_date }}</span> - <span class="time">{{ date.to_date | format_date }}</span>, {{ date.room_number }}, {{ fluent(key=date.date_type.display_name, lang=lang) }}</summary>
-                <table>
-                    <tr>
-                        <td>{{ fluent(key="email", lang=lang) }}:</td>
-                        <td><a href="mailto:{{ date.booking.email }}">{{ date.booking.email }}</a></td>
-                    </tr>
-                    <tr>
-                        <td>{{ fluent(key="person-name", lang=lang) }}:</td>
-                        <td>{{ date.booking.person_name }}</td>
-                    </tr>
-                    <tr>
-                        <td>{{ fluent(key="voice", lang=lang) }}:</td>
-                        <td>{{ fluent(key=date.booking.voice.display_name, lang=lang) }}</td>
-                    </tr>
-                    <tr>
-                        <td>{{ fluent(key="notes", lang=lang) }}:</td>
-                        <td style="white-space: pre;">{{ date.booking.notes }}</td>
-                    </tr>
-                </table>
-            {% else %}
-                <summary><span style="color: #bcbcbc;"><span class="time">{{ date.from_date | format_date }}</span> - <span class="time">{{ date.to_date | format_date }}</span>, {{ date.room_number }}, {{ fluent(key=date.date_type.display_name, lang=lang) }}</span></summary>
-                <p>{{ fluent(key="not-booked", lang=lang) }}</p>
-            {% endif %}
-        </details>
-    {% else %}
-        <p>{{ fluent(key="no-dates-dashboard", lang=lang) }}</p>
-    {% endfor %}
-</div>
+<form method="get">
+    <div class="pure-g">
+        {% for date in dates %}
+            <div class="pure-u-1 pure-u-md-1-2 pure-u-xl-1-3 pure-u-xxl-1-5">
+                <div class="grid-cell">
+                    <input id="select-{{ date.id }}" name="dates" value="{{ date.id }}" type="checkbox" class="float-top-right"/>
+                    <b>{{ fluent(key=date.date_type.display_name, lang=lang) }}, <span class="time">{{ date.from_date | format_date }}</span> - <span class="time">{{ date.to_date | format_date }}</span></b><br>
+                    {{ date.room_number }}
+                    {% if date.booking %}
+                        <table>
+                            <tr>
+                                <td>{{ fluent(key="email", lang=lang) }}:</td>
+                                <td><a href="mailto:{{ date.booking.email }}">{{ date.booking.email }}</a></td>
+                            </tr>
+                            <tr>
+                                <td>{{ fluent(key="person-name", lang=lang) }}:</td>
+                                <td>{{ date.booking.person_name }}</td>
+                            </tr>
+                            <tr>
+                                <td>{{ fluent(key="voice", lang=lang) }}:</td>
+                                <td>{{ fluent(key=date.booking.voice.display_name, lang=lang) }}</td>
+                            </tr>
+                            <tr>
+                                <td>{{ fluent(key="notes", lang=lang) }}:</td>
+                                <td style="white-space: pre;">{{ date.booking.notes }}</td>
+                            </tr>
+                        </table>
+                    {% else %}
+                        <p style="color: #bcbcbc;">{{ fluent(key="not-booked", lang=lang) }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="pure-u-1">
+                <p>{{ fluent(key="no-dates-dashboard", lang=lang) }}</p>
+            </div>
+        {% endfor %}
+    </div>
+    <div>
+        <button type="submit" class="pure-button" formaction="/admin/date-cancel">{{ fluent(key="date-cancel", lang=lang) }}</button>
+    </div>
+</form>
 
 <script type="module">
 const daySelector = document.getElementById("day");

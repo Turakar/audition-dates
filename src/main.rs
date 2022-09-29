@@ -238,6 +238,8 @@ fn rocket() -> _ {
                 admin::room_manage_post,
                 admin::announcements_get,
                 admin::announcements_post,
+                admin::date_cancel_get,
+                admin::date_cancel_post,
             ],
         )
         .mount(

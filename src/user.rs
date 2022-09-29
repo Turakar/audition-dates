@@ -262,14 +262,15 @@ pub async fn booking_new_post(
             voice,
         }) => {
             let token = sqlx::query_scalar!(
-                "insert into bookings (date_id, email, person_name, notes, voice) \
-            values ($1, $2, $3, $4, $5) \
+                "insert into bookings (date_id, email, person_name, notes, voice, lang) \
+            values ($1, $2, $3, $4, $5, $6) \
             returning token",
                 &date.id,
                 &email,
                 &person_name,
                 &notes,
-                &voice.get_value()
+                &voice.get_value(),
+                &lang,
             )
             .fetch_one(&mut *db)
             .await?;

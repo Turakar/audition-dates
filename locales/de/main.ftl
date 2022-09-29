@@ -1,7 +1,10 @@
 brand = Collegium Musicum der RWTH Aachen
 title = Vorsingtermine / Vorspieltermine - { brand }
-language = Deutsch
 cookie-disclaimer = Diese Webseite verwendet Cookies, die zur Funktion notwendig sind.
+
+language = Deutsch
+language-de = Deutsch
+language-en = Englisch
 
 date-type = Ensemble
 date-type-choir = Chor
@@ -88,6 +91,9 @@ room-manage = Räume erstellen und löschen
 room-deleted = Raum gelöscht.
 room-created = Raum erstellt.
 announcements-manage = Ankündigungen verwalten
+date-cancel = Termin stornieren
+date-cancel-explanation = Bitte gebe einen Text an, der an die Personen per Mail verschickt wird, die bereits einen der Termine gebucht haben. Wenn alle Felder leer bleiben, wird keine Mail verschickt.
+no-dates-selected = Es sind keine Termine ausgewählt worden.
 
 welcome-user = Willkommen zur Terminbuchung für die Vorsingen bzw. Vorspiele. Bitte wähle, für welches Ensemble du einen Termin buchen möchtest.
 no-dates = Keine Termine verfügbar.
@@ -111,3 +117,4 @@ mail-booking-body = Dein Termin wurde erfolgreich gebucht. Wir freuen uns auf di
     Raum: { $room }
 
     Falls du nicht kommen kannst, bitten wir dich dringend den Termin wieder zu stornieren, damit andere ihn buchen können. Folge dazu bitte diesem Link:
+mail-date-cancel-subject = Vorsingen / Vorspiel storniert

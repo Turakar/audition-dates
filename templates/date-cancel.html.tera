@@ -1,0 +1,18 @@
+{% extends "base" %}
+
+{% block content %}
+<h1>{{ fluent(key="date-cancel", lang=lang) }}</h1>
+<form method="post" class="pure-form pure-form-stacked">
+    <fieldset>
+        <legend>{{ fluent(key="date-cancel-explanation", lang=lang) }}</legend>
+        {% for date in dates %}
+            <input type="hidden" name="dates" value="{{ date }}" />
+        {% endfor %}
+        {% for language in supported_languages() %}
+            <label for="explanations-{{ language }}">{{ fluent(key="language-" ~ language, lang=lang) }}</label>
+            <textarea id="explanations-{{ language }}" name="explanations[{{ language }}]"></textarea>
+        {% endfor %}
+        <button type="submit" class="pure-button pure-button-primary">{{ fluent(key="date-cancel", lang=lang) }}</button>
+    </fieldset>
+</form>
+{% endblock content %}

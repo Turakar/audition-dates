@@ -12,11 +12,16 @@ use rocket::form::FromForm;
 use rocket::request::FromParam;
 use rocket::response::Redirect;
 use rocket::serde::json::Json;
+use rocket::State;
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
 use serde::Deserialize;
 use serde::Serialize;
+use lettre::message::header;
+use lettre::AsyncTransport;
+use lettre::Message as EmailMessage;
 
+use crate::language::LOCALES;
 use crate::model::validate_room;
 use crate::model::FormDateTime;
 use crate::model::InteropEnumTera;
@@ -26,6 +31,8 @@ use crate::model::MessageType;
 use crate::model::Room;
 use crate::model::Voice;
 use crate::{auth::Admin, language::Language, model::DateType, Database, RocketResult};
+use crate::Mailer;
+use crate::Config;
 
 #[derive(Serialize, Deserialize)]
 pub struct Date {
@@ -122,6 +129,63 @@ pub async fn dashboard(
         "dashboard",
         context! { lang: lang.into_string(), display_name, dates, available_days, day },
     ))
+}
+
+#[get("/admin/date-cancel?<dates>")]
+pub async fn date_cancel_get(lang: Language, _admin: Admin, dates: Vec<i32>) -> Template {
+    Template::render(
+        "date-cancel",
+        context! { lang: lang.into_string(), dates },
+    )
+}
+
+#[derive(FromForm)]
+pub struct DateCancelForm<'r> {
+    dates: Vec<i32>,
+    explanations: BTreeMap<String, &'r str>,
+}
+
+#[post("/admin/date-cancel", data = "<form>")]
+pub async fn date_cancel_post(_admin: Admin, mut db: Connection<Database>,
+    config: &State<Config>,
+    mailer: &State<Mailer>,
+    form: Form<DateCancelForm<'_>>) -> RocketResult<Redirect> {
+    let DateCancelForm {
+        dates, explanations
+    } = form.into_inner();
+    let mut emails = Vec::new();
+    for date in &dates {
+        emails.extend(
+            sqlx::query!("select email, lang from bookings where date_id = $1", &date)
+            .fetch_all(&mut *db)
+            .await?
+            .into_iter()
+            .map(|record| (record.email, record.lang))
+        );
+    }
+    for (email, lang) in emails {
+        println!("{:?}, {}", explanations, lang);
+        let explanation = explanations[&lang];
+        let mail = EmailMessage::builder()
+            .to(email.parse()?)
+            .from(config.email_from_address.parse()?)
+            .subject(
+                LOCALES
+                    .lookup_single_language::<&str>(
+                        &lang.parse()?,
+                        "mail-date-cancel-subject",
+                        None,
+                    )
+                    .ok_or_else(|| anyhow!("Missing translation for mail-date-cancel-subject!"))?,
+            )
+            .header(header::ContentType::TEXT_PLAIN)
+            .body(String::from(explanation))?;
+        mailer.send(mail).await?;
+    }
+    for date in &dates {
+        sqlx::query!("delete from dates where id = $1", &date).execute(&mut *db).await?;
+    }
+    Ok(Redirect::to(uri!(dashboard(day = Option::<&str>::None))))
 }
 
 #[get("/admin/date-new-1")]

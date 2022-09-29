@@ -1,7 +1,10 @@
 brand = Collegium Musicum of RWTH Aachen University
 title = Audition Dates - { brand }
-language = English
 cookie-disclaimer = This website uses cookies that are necessary for the functionality of this service.
+
+language = English
+language-de = German
+language-en = English
 
 date-type = Ensemble
 date-type-choir = Choir
@@ -88,6 +91,9 @@ room-manage = Delete and create rooms
 room-deleted = Room deleted.
 room-created = Room created.
 announcements-manage = Manage announcements
+date-cancel = Cancel date
+date-cancel-explanation = Please provide a text which is sent per mail to the people who already booked one of the dates. If all fields remain empty, no mail is sent.
+no-dates-selected = No dates were selected.
 
 welcome-user = Welcome to the booking system for audition dates. Please select the ensemble you want to join.
 no-dates = No dates available.
@@ -111,3 +117,4 @@ mail-booking-body = Your audition date was booked successfully. We are looking f
     Room: { $room }
 
     If you cannot come, we urgently ask you to cancel your date. To do so, please follow this link:
+mail-date-cancel-subject = Audition date cancelled
