@@ -57,7 +57,7 @@
         {% endfor %}
     </div>
     <div>
-        <button type="submit" class="pure-button" formaction="/admin/date-cancel">{{ fluent(key="date-cancel", lang=lang) }}</button>
+        <button id="date-cancel" type="submit" class="pure-button" formaction="/admin/date-cancel">{{ fluent(key="date-cancel", lang=lang) }}</button>
     </div>
 </form>
 
@@ -70,6 +70,19 @@ daySelector.addEventListener("change", (ev) => {
         url.searchParams.set("day", daySelector.value);
         window.location = url.toString();
     }
+});
+
+const dateCancel = document.getElementById("date-cancel");
+const dateSelects = Array.from(document.getElementsByName("dates").values());
+const updateDateCancel = () => {
+    const checked = dateSelects.filter((element) => element.checked).length;
+    dateCancel.disabled = checked == 0;
+};
+updateDateCancel();
+dateSelects.forEach((element) => {
+    element.addEventListener("change", (event) => {
+        updateDateCancel();
+    });
 });
 </script>
 {% endblock content %}
