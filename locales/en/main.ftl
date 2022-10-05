@@ -96,7 +96,10 @@ date-cancel-explanation = Please provide a text which is sent per mail to the pe
 no-dates-selected = No dates were selected.
 
 welcome-user = Welcome to the booking system for audition dates. Please select the ensemble you want to join.
-no-dates = No dates available.
+no-dates = No dates available. Please enter the waiting list below to be notified if we add new dates.
+waiting-list = Waiting list
+waiting-list-enter = Subscribe
+waiting-list-confirmation = We will notify you as soon as new dates are offered.
 booking-new = Book audition date
 day = Day
 person-name = Name
@@ -118,3 +121,5 @@ mail-booking-body = Your audition date was booked successfully. We are looking f
 
     If you cannot come, we urgently ask you to cancel your date. To do so, please follow this link:
 mail-date-cancel-subject = Audition date cancelled
+mail-waiting-list-confirmation = You have been added to our waiting list for new audition dates successfully.
+mail-new-dates-available = There are new audition dates available. Please visit our website to book one: { $link }

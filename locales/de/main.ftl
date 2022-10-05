@@ -96,7 +96,10 @@ date-cancel-explanation = Bitte gebe einen Text an, der an die Personen per Mail
 no-dates-selected = Es sind keine Termine ausgewählt worden.
 
 welcome-user = Willkommen zur Terminbuchung für die Vorsingen bzw. Vorspiele. Bitte wähle, für welches Ensemble du einen Termin buchen möchtest.
-no-dates = Keine Termine verfügbar.
+no-dates = Keine Termine mehr verfügbar. Bitte trage dich unten in die Warteliste ein, um benachrichtigt zu werden, wenn neue Termine angeboten werden.
+waiting-list = Warteliste
+waiting-list-enter = Eintragen
+waiting-list-confirmation = Wir werden dich benachrichtigen, wenn neue Termine frei werden. Du solltest eine E-Mail mit einer Bestätigung über die Eintragung erhalten.
 booking-new = Termin buchen
 day = Tag
 person-name = Name
@@ -109,6 +112,7 @@ booking-delete-confirmation = Möchtest du den Termin wirklich löschen?
 booking-delete-confirmed = Termin storniert.
 booking-delete-too-late = Termine können nicht im Nachhinein storniert werden.
 
+
 mail-booking-subject = Vorsingen / Vorspiel Buchungsbestätigung
 mail-booking-body = Dein Termin wurde erfolgreich gebucht. Wir freuen uns auf dich!
 
@@ -118,3 +122,5 @@ mail-booking-body = Dein Termin wurde erfolgreich gebucht. Wir freuen uns auf di
 
     Falls du nicht kommen kannst, bitten wir dich dringend den Termin wieder zu stornieren, damit andere ihn buchen können. Folge dazu bitte diesem Link:
 mail-date-cancel-subject = Vorsingen / Vorspiel storniert
+mail-waiting-list-confirmation = Du wurdest erfoglreich in unsere Warteliste für neue Vorsingtermine / Vorspieltermine eingetragen.
+mail-new-dates-available = Es sind neue Vorsingtermine / Vorspieltermine verfügbar. Besuche bitte unsere Webseite um dich anzumelden: { $link }

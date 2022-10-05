@@ -375,3 +375,54 @@ pub async fn booking_delete_post(
         )),
     }
 }
+
+#[derive(FromForm)]
+pub struct WaitingListForm<'r> {
+    email: Email<'r>,
+}
+
+#[post("/waiting-list/<date_type>", data = "<form>")]
+pub async fn waiting_list_post(
+    lang: Language,
+    mut db: Connection<Database>,
+    config: &State<Config>,
+    mailer: &State<Mailer>,
+    date_type: DateType,
+    form: Form<WaitingListForm<'_>>,
+) -> RocketResult<Template> {
+    let email = form.into_inner().email.0;
+    let lang = lang.into_string();
+    sqlx::query!(
+        "insert into waiting_list (date_type, email, lang) values ($1, $2, $3)",
+        date_type.get_value(),
+        &email,
+        &lang
+    )
+    .execute(&mut *db)
+    .await?;
+    let mail = EmailMessage::builder()
+        .to(email.parse()?)
+        .from(config.email_from_address.parse()?)
+        .subject(
+            LOCALES
+                .lookup_single_language::<&str>(&lang.parse()?, "waiting-list", None)
+                .ok_or_else(|| anyhow!("Missing translation for waiting-list!"))?,
+        )
+        .header(header::ContentType::TEXT_PLAIN)
+        .body(
+            LOCALES
+                .lookup_single_language::<&str>(
+                    &lang.parse()?,
+                    "mail-waiting-list-confirmation",
+                    None,
+                )
+                .ok_or_else(|| {
+                    anyhow!("Missing translation for mail-waiting-list-confirmation!")
+                })?,
+        )?;
+    mailer.send(mail).await?;
+    Ok(Template::render(
+        "waiting-list-confirmation",
+        context! { lang },
+    ))
+}
