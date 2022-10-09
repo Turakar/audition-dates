@@ -1,8 +1,8 @@
 use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use lazy_regex::regex_is_match;
-use rocket::form::{self, ValueField};
-use rocket::form::FromFormField;
 use rocket::form::error::ErrorKind;
+use rocket::form::FromFormField;
+use rocket::form::{self, ValueField};
 
 use super::{Message, MessageType};
 

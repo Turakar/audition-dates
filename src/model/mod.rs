@@ -1,13 +1,13 @@
-pub mod form;
 pub mod date_type;
+pub mod form;
 
 use rocket_db_pools::Connection;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::Database;
 
-pub use form::*;
 pub use date_type::*;
+pub use form::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct Message {
