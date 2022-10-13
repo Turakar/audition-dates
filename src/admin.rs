@@ -27,7 +27,6 @@ use serde::Serialize;
 use crate::language::LOCALES;
 use crate::model::validate_room;
 use crate::model::FormDateTime;
-use crate::model::InteropEnumTera;
 use crate::model::IntoInner;
 use crate::model::Message;
 use crate::model::MessageType;
