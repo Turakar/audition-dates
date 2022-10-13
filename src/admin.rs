@@ -32,9 +32,10 @@ use crate::model::Message;
 use crate::model::MessageType;
 use crate::model::Room;
 use crate::model::Voice;
+use crate::model::DateType;
 use crate::Config;
 use crate::Mailer;
-use crate::{auth::Admin, language::Language, model::DateType, Database, RocketResult};
+use crate::{auth::Admin, language::Language, Database, RocketResult};
 
 #[derive(Serialize, Deserialize)]
 pub struct Date {
@@ -51,7 +52,7 @@ pub struct BookableDate {
     pub to_date: DateTime<Local>,
     pub room_number: String,
     pub booking: Option<Booking>,
-    pub date_type: InteropEnumTera,
+    pub date_type: DateType,
 }
 
 #[derive(Serialize)]
@@ -59,7 +60,7 @@ pub struct Booking {
     email: String,
     person_name: String,
     notes: String,
-    voice: InteropEnumTera,
+    voice: Voice,
 }
 
 #[get("/admin/dashboard?<day>")]
@@ -69,6 +70,7 @@ pub async fn dashboard(
     mut db: Connection<Database>,
     day: Option<&str>,
 ) -> RocketResult<Template> {
+    let lang = lang.into_string();
     let display_name = sqlx::query!("select display_name from admins where id = $1", &admin.id)
         .fetch_one(&mut *db)
         .await?
@@ -99,13 +101,16 @@ pub async fn dashboard(
     .map(|record| record.day.with_timezone(&Local).date().and_hms(0, 0, 0))
     .collect();
     let dates: Vec<BookableDate> = sqlx::query!(
-        r#"select dates.id as dates_id, from_date, to_date, room_number, date_type, email as "email?", person_name as "person_name?", notes as "notes?", voice as "voice?"
+        r#"select dates.id as dates_id, from_date, to_date, room_number, dates.date_type, email as "email?", person_name as "person_name?", notes as "notes?", voices.value as "voice?", voices_translations.display_name as "voice_display_name?"
         from dates
         join rooms on dates.room_id = rooms.id
         left join bookings on bookings.date_id = dates.id
+        left join voices on bookings.voice = voices.id
+        left join voices_translations on voices.id = voices_translations.voice
         where $1 <= from_date and from_date <= $1 + interval '1 day'
+        and (voices_translations.lang is null or voices_translations.lang = $2)
         order by from_date asc, date_type asc, room_number asc"#,
-        &day,
+        &day, &lang
     ).fetch_all(&mut *db).await?.into_iter()
         .map(|record| {
             let booking = match record.email.is_some() {
@@ -114,7 +119,10 @@ pub async fn dashboard(
                     email: record.email.unwrap(),
                     person_name: record.person_name.unwrap(),
                     notes: record.notes.unwrap(),
-                    voice: Voice::from_param(&record.voice.unwrap()).unwrap().tera(),
+                    voice: match (record.voice, record.voice_display_name) {
+                        (Some(voice), Some(display_name)) => Voice { value: voice, display_name: Some(display_name) },
+                        _ => panic!("Booking without a voice or a voice without a translation!")
+                    },
                 })
             };
             BookableDate {
@@ -129,7 +137,7 @@ pub async fn dashboard(
         .collect();
     Ok(Template::render(
         "dashboard",
-        context! { lang: lang.into_string(), display_name, dates, available_days, day },
+        context! { lang, display_name, dates, available_days, day },
     ))
 }
 
@@ -226,7 +234,7 @@ pub async fn date_new_1_get(
 
 #[derive(FromForm)]
 pub struct DateNew1Form<'r> {
-    date_type: form::Result<'r, DateType>,
+    date_type: &'r str,
     room: &'r str,
     from_date: FormDateTime,
     to_date: FormDateTime,

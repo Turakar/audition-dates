@@ -11,12 +11,24 @@ use serde::Serialize;
 use crate::Database;
 
 #[derive(Serialize, Deserialize)]
-pub struct Date {
-    id: i32,
-    from_date: DateTime<Local>,
-    to_date: DateTime<Local>,
-    room_number: String,
-    date_type: DateType,
+pub struct Voice {
+    value: String,
+    display_name: Option<String>,
+}
+
+impl Voice {
+    pub async fn get_from_value(db: &mut Connection<Database>, value: String, lang: &str) -> Result<Self> {
+        let display_name = sqlx::query!(
+            "select display_name \
+            from voices \
+            join voices_translations on voices.id = voices_translations.voice \
+            where value = $1 and lang = $2",
+        &value, &lang).fetch_one(&mut *db).await?;
+        Ok(Voice {
+            value,
+            display_name: Some(display_name)
+        })
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -25,10 +37,22 @@ pub struct DateType {
     display_name: Option<String>,
 }
 
+impl DateType {
+    pub async fn get_variants(db: &mut Connection<Database>, lang: &str) -> Vec<Self> {
+        sqlx::query!(
+            r#"select id, display_name
+            from date_types
+            join date_types_translations on date_types.id = date_types_translation.date_type"#)
+    }
+}
+
 #[derive(Serialize, Deserialize)]
-pub struct Voice {
-    value: String,
-    display_name: Option<String>,
+pub struct Date {
+    id: i32,
+    from_date: DateTime<Local>,
+    to_date: DateTime<Local>,
+    room_number: String,
+    date_type: DateType,
 }
 
 impl Date {
