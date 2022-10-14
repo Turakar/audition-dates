@@ -1,5 +1,5 @@
 {% extends "base" %}
 {% block content %}
-<h1>{{ fluent(key="waiting-list", lang=lang) }}</h1>
+<h1>{{ fluent(key="waiting-list", lang=lang, datetype=date_type.display_name) }}</h1>
 <p>{{ fluent(key="waiting-list-confirmation", lang=lang) }}</p>
 {% endblock content %}

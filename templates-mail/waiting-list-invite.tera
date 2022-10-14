@@ -1,0 +1,5 @@
+{{ fluent(key="mail-waiting-list-invite", lang=lang) }}
+{{ link }}
+
+{{ fluent(key="mail-waiting-list-footer", lang=lang) }}
+{{ unsubscribe }}

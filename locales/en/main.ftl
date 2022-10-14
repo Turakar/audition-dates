@@ -97,9 +97,11 @@ no-dates-selected = No dates were selected.
 
 welcome-user = Welcome to the booking system for audition dates. Please select the ensemble you want to join.
 no-dates = No dates available. Please enter the waiting list below to be notified if we add new dates.
-waiting-list = Waiting list
+waiting-list = Waiting List { $datetype }
 waiting-list-enter = Subscribe
 waiting-list-confirmation = We will notify you as soon as new dates are offered.
+waiting-list-unsubscribe-confirmation = Do you really want to unsubscribe to the waiting list?
+waiting-list-unsubscribe = Unsubscribe
 booking-new = Book audition date
 day = Day
 person-name = Name
@@ -122,4 +124,5 @@ mail-booking-body = Your audition date was booked successfully. We are looking f
     If you cannot come, we urgently ask you to cancel your date. To do so, please follow this link:
 mail-date-cancel-subject = Audition date cancelled
 mail-waiting-list-confirmation = You have been added to our waiting list for new audition dates successfully.
-mail-new-dates-available = There are new audition dates available. Please visit our website to book one: { $link }
+mail-waiting-list-invite = There are new audition dates available. Please visit our website to book one:
+mail-waiting-list-footer = Please follow the below link to leave the waiting list:
