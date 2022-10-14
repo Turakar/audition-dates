@@ -18,6 +18,7 @@ use rocket_dyn_templates::{context, Template};
 
 use crate::language::LOCALES;
 use crate::model::get_announcement;
+use crate::model::Date;
 use crate::model::Message;
 use crate::model::MessageType;
 use crate::model::{DateType, Email};
@@ -29,11 +30,12 @@ use crate::{language::Language, Config, Database, RocketResult};
 pub async fn index_get(lang: Language, mut db: Connection<Database>) -> RocketResult<Template> {
     let lang = lang.into_string();
     let announcement = get_announcement("general", &lang, &mut db).await?;
+    let date_types = DateType::get_variants(&mut db, &lang).await?;
     Ok(Template::render(
         "index",
         context! {
             lang,
-            date_types: DateType::get_variants_tera(),
+            date_types,
             announcement,
         },
     ))
@@ -47,7 +49,7 @@ pub async fn date_overview_get(
     date_type: &str,
 ) -> RocketResult<Template> {
     let lang = lang.into_string();
-    let dates = DateType::get_available_dates(
+    let dates = Date::get_available_dates(
         &mut db,
         Some(date_type),
         config.dates_per_day,
@@ -55,7 +57,8 @@ pub async fn date_overview_get(
         Some(lang.as_str()),
     )
     .await?;
-    let announcement = get_announcement(date_type.get_value(), &lang, &mut db).await?;
+    let announcement = get_announcement(date_type, &lang, &mut db).await?;
+    let date_type = DateType::get_by_value(&mut db, date_type, &lang).await?;
     Ok(Template::render(
         "date-overview",
         context! {
@@ -83,7 +86,7 @@ pub async fn booking_new_get(
     id: i32,
 ) -> RocketResult<Result<Template, Status>> {
     let lang = lang.into_string();
-    let date = DateType::get_available_date(
+    let date = Date::get_available_date(
         &mut db,
         id,
         lang.as_str(),
@@ -96,11 +99,12 @@ pub async fn booking_new_get(
         None => Ok(Err(Status::Gone)),
         Some(date) => {
             let announcement = get_announcement(&date.date_type.value, &lang, &mut db).await?;
+            let voices = date.date_type.get_voices(&mut db, &lang, "booking").await?;
             Ok(Ok(Template::render(
                 "booking-new",
                 context! {
                     lang,
-                    voices: date.date_type.get_voices(&mut db, &lang, "booking"),
+                    voices,
                     date,
                     email: "",
                     person_name: "",
@@ -123,16 +127,15 @@ pub async fn booking_new_post(
     id: i32,
 ) -> RocketResult<Result<Template, Status>> {
     let lang = lang.into_string();
-
-    let lang = lang.into_string();
-    let date = match DateType::get_available_date(
+    let date = match Date::get_available_date(
         &mut db,
         id,
         lang.as_str(),
         config.dates_per_day,
         config.days_deadline,
     )
-    .await? {
+    .await?
+    {
         Some(date) => date,
         None => {
             return Ok(Err(Status::Gone));
@@ -143,6 +146,7 @@ pub async fn booking_new_post(
 
     match &form.value {
         None => {
+            let voices = date.date_type.get_voices(&mut db, &lang, "booking").await?;
             let context = &form.context;
             let messages: Vec<Message> = context
                 .errors()
@@ -157,12 +161,11 @@ pub async fn booking_new_post(
                     },
                 })
                 .collect();
-
             Ok(Ok(Template::render(
                 "booking-new",
                 context! {
                     lang,
-                    voices: date.date_type.get_voices_tera(),
+                    voices,
                     date,
                     email: context.field_value("email").unwrap_or_default(),
                     person_name: context.field_value("person_name").unwrap_or_default(),
@@ -181,13 +184,14 @@ pub async fn booking_new_post(
         }) => {
             let token = sqlx::query_scalar!(
                 "insert into bookings (date_id, email, person_name, notes, voice, lang) \
-            values ($1, $2, $3, $4, $5, $6) \
+            values ($1, $2, $3, $4, (select id from voices where value = $5 and date_type = $6 and position = 'booking'), $7) \
             returning token",
                 &date.id,
                 &email,
                 &person_name,
                 &notes,
-                &voice.get_value(),
+                &voice,
+                &date.date_type.value,
                 &lang,
             )
             .fetch_one(&mut *db)
@@ -305,14 +309,14 @@ pub async fn waiting_list_post(
     mut db: Connection<Database>,
     config: &State<Config>,
     mailer: &State<Mailer>,
-    date_type: DateType,
+    date_type: &str,
     form: Form<WaitingListForm<'_>>,
 ) -> RocketResult<Template> {
     let email = form.into_inner().email.0;
     let lang = lang.into_string();
     sqlx::query!(
         "insert into waiting_list (date_type, email, lang) values ($1, $2, $3)",
-        date_type.get_value(),
+        &date_type,
         &email,
         &lang
     )

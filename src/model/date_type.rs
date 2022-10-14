@@ -1,9 +1,8 @@
+use anyhow::anyhow;
 use anyhow::Result;
 use chrono::DateTime;
 use chrono::Duration;
 use chrono::Local;
-use rocket::form::FromFormField;
-use rocket::request::FromParam;
 use rocket_db_pools::Connection;
 use serde::Deserialize;
 use serde::Serialize;
@@ -12,47 +11,90 @@ use crate::Database;
 
 #[derive(Serialize, Deserialize)]
 pub struct Voice {
-    value: String,
-    display_name: Option<String>,
+    pub value: String,
+    pub display_name: Option<String>,
 }
 
-impl Voice {
-    pub async fn get_from_value(db: &mut Connection<Database>, value: String, lang: &str) -> Result<Self> {
-        let display_name = sqlx::query!(
-            "select display_name \
-            from voices \
-            join voices_translations on voices.id = voices_translations.voice \
-            where value = $1 and lang = $2",
-        &value, &lang).fetch_one(&mut *db).await?;
-        Ok(Voice {
-            value,
-            display_name: Some(display_name)
-        })
-    }
-}
-
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct DateType {
-    value: String,
-    display_name: Option<String>,
+    pub value: String,
+    pub display_name: Option<String>,
 }
 
 impl DateType {
-    pub async fn get_variants(db: &mut Connection<Database>, lang: &str) -> Vec<Self> {
-        sqlx::query!(
+    pub async fn get_by_value(
+        db: &mut Connection<Database>,
+        value: &str,
+        lang: &str,
+    ) -> Result<Self> {
+        let display_name = sqlx::query_scalar!(
+            r#"select display_name
+            from date_types_translations
+            where date_type = $1 and lang = $2"#,
+            &value,
+            &lang
+        )
+        .fetch_one(&mut **db)
+        .await?;
+        Ok(Self {
+            value: String::from(value),
+            display_name: Some(display_name),
+        })
+    }
+
+    pub async fn get_variants(db: &mut Connection<Database>, lang: &str) -> Result<Vec<Self>> {
+        Ok(sqlx::query!(
             r#"select id, display_name
             from date_types
-            join date_types_translations on date_types.id = date_types_translation.date_type"#)
+            join date_types_translations on date_types.id = date_types_translations.date_type
+            where lang = $1"#,
+            &lang
+        )
+        .fetch_all(&mut **db)
+        .await?
+        .into_iter()
+        .map(|record| Self {
+            value: record.id,
+            display_name: Some(record.display_name),
+        })
+        .collect())
+    }
+
+    pub async fn get_voices(
+        &self,
+        db: &mut Connection<Database>,
+        lang: &str,
+        position: &str,
+    ) -> Result<Vec<Voice>> {
+        Ok(sqlx::query!(
+            "select value, display_name \
+        from voices \
+        join voices_translations on voices.id = voices_translations.voice \
+        where lang = $1 \
+        and position::text = $2 \
+        and date_type = $3",
+            &lang,
+            &position,
+            &self.value,
+        )
+        .fetch_all(&mut **db)
+        .await?
+        .into_iter()
+        .map(|record| Voice {
+            value: record.value,
+            display_name: Some(record.display_name),
+        })
+        .collect())
     }
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Date {
-    id: i32,
-    from_date: DateTime<Local>,
-    to_date: DateTime<Local>,
-    room_number: String,
-    date_type: DateType,
+    pub id: i32,
+    pub from_date: DateTime<Local>,
+    pub to_date: DateTime<Local>,
+    pub room_number: String,
+    pub date_type: DateType,
 }
 
 impl Date {
@@ -117,8 +159,34 @@ impl Date {
             })
             .collect(),
 
-            (None, _) => sqlx::query!(
-                "select dates.id as id, from_date, to_date, room_number, date_type \
+            (None, Some(lang)) => sqlx::query!(
+                "select dates.id as id, from_date, to_date, room_number, dates.date_type, display_name \
+                    from dates \
+                    join date_types_translations on date_types_translations.date_type = dates.date_type \
+                    join rooms on rooms.id = dates.room_id \
+                    left join bookings on dates.id = bookings.date_id \
+                    where token is null \
+                    and date_types_translations.lang = $1 \
+                    order by from_date asc",
+                    &lang,
+            )
+            .fetch_all(&mut **db)
+            .await?
+            .into_iter()
+            .map(|record| Date {
+                id: record.id,
+                from_date: record.from_date.with_timezone(&Local),
+                to_date: record.to_date.with_timezone(&Local),
+                room_number: record.room_number,
+                date_type: DateType {
+                    value: record.date_type,
+                    display_name: Some(record.display_name),
+                },
+            })
+            .collect(),
+
+            (None, None) => sqlx::query!(
+                "select dates.id as id, from_date, to_date, room_number, dates.date_type \
                     from dates \
                     join rooms on rooms.id = dates.room_id \
                     left join bookings on dates.id = bookings.date_id \
@@ -133,7 +201,10 @@ impl Date {
                 from_date: record.from_date.with_timezone(&Local),
                 to_date: record.to_date.with_timezone(&Local),
                 room_number: record.room_number,
-                date_type: DateType::from_param(&record.date_type).unwrap(),
+                date_type: DateType {
+                    value: record.date_type,
+                    display_name: None,
+                },
             })
             .collect(),
         };
@@ -181,56 +252,22 @@ impl Date {
         dates_per_day: usize,
         days_deadline: u32,
     ) -> Result<Option<Date>> {
-        let record = sqlx::query!(
-            "select from_date, to_date, room_number, dates.date_type, display_name \
-                from dates \
-                join rooms on rooms.id = dates.room_id \
-                left join bookings on dates.id = bookings.date_id \
-                join date_types_translations on date_types_translations.date_type = dates.date_type \
-                where token is null \
-                and date_types_translations.lang = $1 \
-                order by from_date asc",
-                &lang,
-    )
-        .fetch_optional(&mut **db)
-        .await?;
-        match record {
-            Some(record) => Ok(Some(Date {
-                id,
-                from_date: record.from_date.with_timezone(&Local),
-                to_date: record.to_date.with_timezone(&Local),
-                room_number: record.room_number,
-                date_type: DateType {
-                    value: record.date_type,
-                    display_name: Some(record.display_name),
-                },
-            })),
-            None => Ok(None)
-        }
-        
-    }
-
-    pub async fn get_voices(
-        &self,
-        db: &mut Connection<Database>,
-        lang: &str,
-        position: &str,
-    ) -> Vec<Voice> {
-        sqlx::query!(
-            "select value, display_name \
-        from voices \
-        join voices_translations on voices.id = voices_translations.voice \
-        where lang = $1 \
-        and position::text = $2",
-            &lang,
-            &position
+        let date_type = sqlx::query_scalar!("select date_type from dates where id = $1", &id)
+            .fetch_one(&mut **db)
+            .await?;
+        let mut dates = Self::get_available_dates(
+            db,
+            Some(&date_type),
+            dates_per_day,
+            days_deadline,
+            Some(lang),
         )
-        .fetch_all(&mut **db)
-        .into_iter()
-        .map(|record| Voice {
-            value: record.value,
-            display_name: record.display_name,
-        })
-        .collect()
+        .await?;
+        dates.retain(|date| date.id == id);
+        match dates.len() {
+            0 => Ok(None),
+            1 => Ok(Some(dates.remove(0))),
+            _ => Err(anyhow!("IDs of dates are not unique!")),
+        }
     }
 }

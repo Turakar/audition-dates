@@ -12,10 +12,8 @@ use lettre::message::header;
 use lettre::AsyncTransport;
 use lettre::Message as EmailMessage;
 use map_macro::map;
-use rocket::form;
 use rocket::form::Form;
 use rocket::form::FromForm;
-use rocket::request::FromParam;
 use rocket::response::Redirect;
 use rocket::serde::json::Json;
 use rocket::State;
@@ -26,13 +24,13 @@ use serde::Serialize;
 
 use crate::language::LOCALES;
 use crate::model::validate_room;
+use crate::model::DateType;
 use crate::model::FormDateTime;
 use crate::model::IntoInner;
 use crate::model::Message;
 use crate::model::MessageType;
 use crate::model::Room;
 use crate::model::Voice;
-use crate::model::DateType;
 use crate::Config;
 use crate::Mailer;
 use crate::{auth::Admin, language::Language, Database, RocketResult};
@@ -101,40 +99,63 @@ pub async fn dashboard(
     .map(|record| record.day.with_timezone(&Local).date().and_hms(0, 0, 0))
     .collect();
     let dates: Vec<BookableDate> = sqlx::query!(
-        r#"select dates.id as dates_id, from_date, to_date, room_number, dates.date_type, email as "email?", person_name as "person_name?", notes as "notes?", voices.value as "voice?", voices_translations.display_name as "voice_display_name?"
+        r#"select
+        dates.id as dates_id,
+        from_date,
+        to_date,
+        room_number,
+        dates.date_type,
+        date_types_translations.display_name as date_type_display_name,
+        email as "email?",
+        person_name as "person_name?",
+        notes as "notes?",
+        voices.value as "voice?",
+        voices_translations.display_name as "voice_display_name?"
         from dates
+        join date_types_translations on date_types_translations.date_type = dates.date_type
         join rooms on dates.room_id = rooms.id
         left join bookings on bookings.date_id = dates.id
         left join voices on bookings.voice = voices.id
         left join voices_translations on voices.id = voices_translations.voice
         where $1 <= from_date and from_date <= $1 + interval '1 day'
+        and date_types_translations.lang = $2
         and (voices_translations.lang is null or voices_translations.lang = $2)
         order by from_date asc, date_type asc, room_number asc"#,
-        &day, &lang
-    ).fetch_all(&mut *db).await?.into_iter()
-        .map(|record| {
-            let booking = match record.email.is_some() {
-                false => None,
-                true => Some(Booking {
-                    email: record.email.unwrap(),
-                    person_name: record.person_name.unwrap(),
-                    notes: record.notes.unwrap(),
-                    voice: match (record.voice, record.voice_display_name) {
-                        (Some(voice), Some(display_name)) => Voice { value: voice, display_name: Some(display_name) },
-                        _ => panic!("Booking without a voice or a voice without a translation!")
+        &day,
+        &lang
+    )
+    .fetch_all(&mut *db)
+    .await?
+    .into_iter()
+    .map(|record| {
+        let booking = match record.email.is_some() {
+            false => None,
+            true => Some(Booking {
+                email: record.email.unwrap(),
+                person_name: record.person_name.unwrap(),
+                notes: record.notes.unwrap(),
+                voice: match (record.voice, record.voice_display_name) {
+                    (Some(voice), Some(display_name)) => Voice {
+                        value: voice,
+                        display_name: Some(display_name),
                     },
-                })
-            };
-            BookableDate {
-                id: record.dates_id,
-                from_date: record.from_date.with_timezone(&Local),
-                to_date: record.to_date.with_timezone(&Local),
-                room_number: record.room_number,
-                booking,
-                date_type: DateType::from_param(&record.date_type).unwrap().tera(),
-            }
-        })
-        .collect();
+                    _ => panic!("Booking without a voice or a voice without a translation!"),
+                },
+            }),
+        };
+        BookableDate {
+            id: record.dates_id,
+            from_date: record.from_date.with_timezone(&Local),
+            to_date: record.to_date.with_timezone(&Local),
+            room_number: record.room_number,
+            booking,
+            date_type: DateType {
+                value: record.date_type,
+                display_name: Some(record.date_type_display_name),
+            },
+        }
+    })
+    .collect();
     Ok(Template::render(
         "dashboard",
         context! { lang, display_name, dates, available_days, day },
@@ -211,19 +232,21 @@ pub async fn date_new_1_get(
     _admin: Admin,
     mut db: Connection<Database>,
 ) -> RocketResult<Template> {
+    let lang = lang.into_string();
     let rooms: Vec<String> = sqlx::query!("select room_number from rooms order by room_number asc")
         .fetch_all(&mut *db)
         .await?
         .into_iter()
         .map(|record| record.room_number)
         .collect();
+    let date_types = DateType::get_variants(&mut db, &lang).await?;
     Ok(Template::render(
         "date-new-1",
         context! {
-            lang: lang.into_string(),
+            lang,
             rooms,
             room_selected: "",
-            date_types: DateType::get_variants_tera(),
+            date_types,
             date_type_selected: "",
             from_date: Local::now(),
             to_date: Local::now() + Duration::hours(1),
@@ -248,6 +271,7 @@ pub async fn date_new_1_post(
     mut db: Connection<Database>,
     form: Form<DateNew1Form<'_>>,
 ) -> RocketResult<Template> {
+    let lang = lang.into_string();
     let DateNew1Form {
         date_type,
         room,
@@ -257,10 +281,6 @@ pub async fn date_new_1_post(
     } = form.into_inner();
 
     let mut messages = Vec::new();
-    let date_type_selected = date_type
-        .as_ref()
-        .map(|x| x.get_value())
-        .unwrap_or_default();
     let (room, room_id) = validate_room(room, &mut messages, &mut db).await?;
     let from_date = from_date.into_inner();
     let to_date = to_date.into_inner();
@@ -292,14 +312,15 @@ pub async fn date_new_1_post(
                 .into_iter()
                 .map(|record| record.room_number)
                 .collect();
+        let date_types = DateType::get_variants(&mut db, &lang).await?;
         return Ok(Template::render(
             "date-new-1",
             context! {
-                lang: lang.into_string(),
+                lang,
                 rooms,
                 room_selected: room,
-                date_types: DateType::get_variants_tera(),
-                date_type_selected: date_type_selected,
+                date_types,
+                date_type_selected: date_type,
                 messages,
                 from_date,
                 to_date,
@@ -308,7 +329,7 @@ pub async fn date_new_1_post(
         ));
     }
 
-    let date_type = date_type.unwrap();
+    let date_type = DateType::get_by_value(&mut db, date_type, &lang).await?;
 
     let num_dates = (num_minutes / interval) as i32;
     let dates: Vec<Date> = (0..num_dates)
@@ -317,14 +338,14 @@ pub async fn date_new_1_post(
             from_date: from_date + Duration::minutes(interval) * i,
             to_date: from_date + Duration::minutes(interval) * (i + 1),
             room_id,
-            date_type,
+            date_type: date_type.clone(),
         })
         .collect();
 
     Ok(Template::render(
         "date-new-2",
         context! {
-            lang: lang.into_string(),
+            lang,
             dates,
             interval,
         },
@@ -377,13 +398,13 @@ pub async fn date_new_2_post(
                 &from_date,
                 &to_date,
                 &room_id,
-                &date_type.get_value(),
+                &date_type.value,
             )
             .execute(&mut *db)
             .await?;
             let waiting_list = sqlx::query!(
                 "select email, lang from waiting_list where date_type = $1",
-                &date_type.get_value()
+                &date_type.value
             )
             .fetch_all(&mut *db)
             .await?;
@@ -416,7 +437,7 @@ pub async fn date_new_2_post(
             }
             sqlx::query!(
                 "delete from waiting_list where date_type = $1",
-                &date_type.get_value()
+                &date_type.value
             )
             .execute(&mut *db)
             .await?;
