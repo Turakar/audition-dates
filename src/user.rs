@@ -1,16 +1,23 @@
+use std::borrow::Cow;
+
 use anyhow::anyhow;
 use anyhow::Result;
+use fluent_templates::fluent_bundle::FluentValue;
+use fluent_templates::Loader;
+use futures::TryStreamExt;
 use lettre::message::header;
 use lettre::message::header::ContentTransferEncoding;
 use lettre::message::IntoBody;
 use lettre::AsyncTransport;
 use lettre::Message as EmailMessage;
+use map_macro::map;
 use rocket::form::error::ErrorKind;
 use rocket::form::Contextual;
 use rocket::form::Form;
 use rocket::form::FromForm;
 use rocket::http::Status;
 use rocket::request::FromRequest;
+use rocket::response::Redirect;
 use rocket::Request;
 use rocket::State;
 use rocket_db_pools::Connection;
@@ -197,6 +204,16 @@ pub async fn booking_new_post(
             .fetch_one(&mut *db)
             .await?;
 
+            sqlx::query!(
+                r#"delete from waiting_list
+                where email = $1
+                and date_type = $2"#,
+                &email,
+                &date.date_type.value
+            )
+            .execute(&mut *db)
+            .await?;
+
             let link = format!("{}/booking/delete/{}", &config.web_address, &token);
             let mut mail_context = tera::Context::new();
             mail_context.insert("lang", &lang);
@@ -265,27 +282,31 @@ pub async fn booking_delete_get(lang: Language, _token: &str) -> Template {
 pub async fn booking_delete_post(
     lang: Language,
     mut db: Connection<Database>,
+    config: &State<Config>,
+    mailer: &State<Mailer>,
     token: &str,
 ) -> RocketResult<Template> {
-    let too_late: Option<bool> = sqlx::query_scalar!(
-        r#"select from_date < now() as "too_late!"
+    let record = sqlx::query!(
+        r#"select from_date < now() as "too_late!", date_type
         from dates
         join bookings on dates.id = bookings.date_id
         where bookings.token = $1"#,
         &token
     )
+    .map(|record| (record.too_late, record.date_type))
     .fetch_optional(&mut *db)
     .await?;
 
-    match too_late {
-        Some(true) => Ok(Template::render(
+    match record {
+        Some((true, _)) => Ok(Template::render(
             "booking-delete",
             context! { lang: lang.into_string(), messages: [Message { text_key: String::from("booking-delete-too-late"), message_type: MessageType::Error }] },
         )),
-        Some(false) => {
+        Some((false, date_type)) => {
             sqlx::query!("delete from bookings where token = $1", &token)
                 .execute(&mut *db)
                 .await?;
+            waiting_list_notify(&mut db, &date_type, &config, &mailer).await?;
             Ok(Template::render(
                 "booking-delete-confirm",
                 context! { lang: lang.into_string() },
@@ -303,8 +324,8 @@ pub struct WaitingListForm<'r> {
     email: Email<'r>,
 }
 
-#[post("/waiting-list/<date_type>", data = "<form>")]
-pub async fn waiting_list_post(
+#[post("/waiting-list/subscribe/<date_type>", data = "<form>")]
+pub async fn waiting_list_subscribe_post(
     lang: Language,
     mut db: Connection<Database>,
     config: &State<Config>,
@@ -314,37 +335,160 @@ pub async fn waiting_list_post(
 ) -> RocketResult<Template> {
     let email = form.into_inner().email.0;
     let lang = lang.into_string();
-    sqlx::query!(
-        "insert into waiting_list (date_type, email, lang) values ($1, $2, $3)",
+    let token = sqlx::query_scalar!(
+        r#"insert into waiting_list (date_type, email, lang)
+        values  ($1, $2, $3)
+        on conflict do nothing
+        returning token"#,
         &date_type,
         &email,
         &lang
     )
-    .execute(&mut *db)
+    .fetch_optional(&mut *db)
     .await?;
+    let token = match token {
+        Some(token) => token,
+        None => {
+            sqlx::query_scalar!(
+                "select token from waiting_list where date_type = $1 and email = $2",
+                &date_type,
+                &email
+            )
+            .fetch_one(&mut *db)
+            .await?
+        }
+    };
+    let mut mail_context = tera::Context::new();
+    mail_context.insert(
+        "unsubscribe",
+        format!(
+            "{}/waiting-list/unsubscribe/{}",
+            &config.web_address, &token
+        )
+        .as_str(),
+    );
+    mail_context.insert("lang", &lang);
+    let date_type = DateType::get_by_value(&mut db, &date_type, &lang).await?;
+    let mail_header_args = map! {
+        "datetype" => date_type.display_name.clone().unwrap().into()
+    };
     let mail = EmailMessage::builder()
         .to(email.parse()?)
         .from(config.email_from_address.parse()?)
         .subject(
             LOCALES
-                .lookup_single_language::<&str>(&lang.parse()?, "waiting-list", None)
+                .lookup_single_language(&lang.parse()?, "waiting-list", Some(&mail_header_args))
                 .ok_or_else(|| anyhow!("Missing translation for waiting-list!"))?,
         )
         .header(header::ContentType::TEXT_PLAIN)
         .body(
-            LOCALES
-                .lookup_single_language::<&str>(
-                    &lang.parse()?,
-                    "mail-waiting-list-confirmation",
-                    None,
-                )
-                .ok_or_else(|| {
-                    anyhow!("Missing translation for mail-waiting-list-confirmation!")
-                })?,
+            MAIL_TEMPLATES
+                .render("waiting-list-confirmation.tera", &mail_context)?
+                .into_body(Some(ContentTransferEncoding::Base64)),
         )?;
     mailer.send(mail).await?;
     Ok(Template::render(
         "waiting-list-confirmation",
-        context! { lang },
+        context! { lang, date_type },
     ))
+}
+
+#[get("/waiting-list/unsubscribe/<token>")]
+pub async fn waiting_list_unsubscribe_get(
+    lang: Language,
+    mut db: Connection<Database>,
+    token: &str,
+) -> RocketResult<Template> {
+    let lang = lang.into_string();
+    let date_type = sqlx::query_scalar!(
+        r#"select display_name
+        from date_types_translations
+        join waiting_list on waiting_list.date_type = date_types_translations.date_type
+        where waiting_list.token = $1
+        and date_types_translations.lang = $2"#,
+        &token,
+        &lang,
+    )
+    .fetch_one(&mut *db)
+    .await?;
+    Ok(Template::render(
+        "waiting-list-unsubscribe",
+        context! {
+            lang, date_type
+        },
+    ))
+}
+
+#[post("/waiting-list/unsubscribe/<token>")]
+pub async fn waiting_list_unsubscribe_post(
+    mut db: Connection<Database>,
+    token: &str,
+) -> RocketResult<Redirect> {
+    sqlx::query!(
+        r#"delete from waiting_list
+        where token = $1"#,
+        &token
+    )
+    .execute(&mut *db)
+    .await?;
+    Ok(Redirect::to(uri!(index_get)))
+}
+
+pub async fn waiting_list_notify(
+    db: &mut Connection<Database>,
+    date_type: &str,
+    config: &Config,
+    mailer: &Mailer,
+) -> Result<()> {
+    let recipients: Vec<(String, String, String)> = sqlx::query!(
+        r#"select email, lang, token
+        from waiting_list
+        where date_type = $1"#,
+        &date_type
+    )
+    .fetch(&mut **db)
+    .map_ok(|record| (record.email, record.lang, record.token))
+    .try_collect::<Vec<(String, String, String)>>()
+    .await?;
+
+    for (email, lang, token) in recipients {
+        let date_type = DateType::get_by_value(db, &date_type, &lang).await?;
+        let mut mail_context = tera::Context::new();
+        mail_context.insert(
+            "unsubscribe",
+            format!(
+                "{}/waiting-list/unsubscribe/{}",
+                &config.web_address, &token
+            )
+            .as_str(),
+        );
+        mail_context.insert(
+            "link",
+            format!("{}/dates/{}", &config.web_address, &date_type.value).as_str(),
+        );
+        mail_context.insert("lang", &lang);
+        let mail_header_args = map! {
+            "datetype" => date_type.display_name.clone().unwrap().into()
+        };
+        let message = EmailMessage::builder()
+            .to(email.parse()?)
+            .from(config.email_from_address.parse()?)
+            .subject(
+                LOCALES
+                    .lookup_single_language(
+                        &lang.parse()?,
+                        "waiting-list",
+                        Some(&mail_header_args),
+                    )
+                    .ok_or_else(|| anyhow!("Missing translation for waiting-list!"))?,
+            )
+            .header(header::ContentType::TEXT_PLAIN)
+            .body(
+                MAIL_TEMPLATES
+                    .render("waiting-list-invite.tera", &mail_context)?
+                    .into_body(Some(ContentTransferEncoding::Base64)),
+            )?;
+        mailer.send(message).await?;
+    }
+    Ok(())
 }

@@ -1,0 +1,8 @@
+{% extends "base" %}
+{% block content %}
+<h1>{{ fluent(key="waiting-list", lang=lang, datetype=date_type) }}</h1>
+<p>{{ fluent(key="waiting-list-unsubscribe-confirmation", lang=lang) }}</p>
+<form class="pure-form" method="post">
+    <button type="submit" class="pure-button pure-button-primary">{{ fluent(key="waiting-list-unsubscribe", lang=lang) }}</button>
+</form>
+{% endblock content %}

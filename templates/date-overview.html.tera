@@ -14,7 +14,7 @@
     {% endfor %}
 {% else %}
     <p>{{ fluent(key="no-dates", lang=lang) }}</p>
-    <form method="post" action="/waiting-list/{{ date_type.value }}" class="pure-form">
+    <form method="post" action="/waiting-list/subscribe/{{ date_type.value }}" class="pure-form">
         <label for="email">{{ fluent(key="email", lang=lang) }}</label>
         <input type="email" id="email" name="email" placeholder="{{ fluent(key="email", lang=lang) }}" />
         <button type="submit" class="pure-button pure-button-primary">{{ fluent(key="waiting-list-enter", lang=lang) }}</button>

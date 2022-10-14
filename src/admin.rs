@@ -1,5 +1,5 @@
-use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::collections::HashSet;
 
 use anyhow::anyhow;
 use chrono::DateTime;
@@ -7,11 +7,9 @@ use chrono::Duration;
 use chrono::Local;
 use chrono::NaiveDateTime;
 use chrono::TimeZone;
-use fluent_templates::fluent_bundle::FluentValue;
 use lettre::message::header;
 use lettre::AsyncTransport;
 use lettre::Message as EmailMessage;
-use map_macro::map;
 use rocket::form::Form;
 use rocket::form::FromForm;
 use rocket::response::Redirect;
@@ -31,6 +29,7 @@ use crate::model::Message;
 use crate::model::MessageType;
 use crate::model::Room;
 use crate::model::Voice;
+use crate::user::waiting_list_notify;
 use crate::Config;
 use crate::Mailer;
 use crate::{auth::Admin, language::Language, Database, RocketResult};
@@ -196,7 +195,6 @@ pub async fn date_cancel_post(
         );
     }
     for (email, lang) in emails {
-        println!("{:?}, {}", explanations, lang);
         let explanation = explanations[&lang];
         if !explanation.is_empty() {
             let mail = EmailMessage::builder()
@@ -383,65 +381,28 @@ pub async fn date_new_2_post(
         return Err(anyhow!("Invalid buffered dates!").into());
     }
 
-    if !dates.is_empty() {
-        let mail_context =
-            map! { "link" => FluentValue::String(Cow::Borrowed(config.web_address.as_str())) };
-        for date in dates {
-            let Date {
-                from_date,
-                to_date,
-                room_id,
-                date_type,
-            } = date;
-            sqlx::query!(
-                "insert into dates (from_date, to_date, room_id, date_type) values ($1, $2, $3, $4)",
-                &from_date,
-                &to_date,
-                &room_id,
-                &date_type.value,
-            )
-            .execute(&mut *db)
-            .await?;
-            let waiting_list = sqlx::query!(
-                "select email, lang from waiting_list where date_type = $1",
-                &date_type.value
-            )
-            .fetch_all(&mut *db)
-            .await?;
-            for record in waiting_list {
-                let mail = EmailMessage::builder()
-                    .to(record.email.parse()?)
-                    .from(config.email_from_address.parse()?)
-                    .subject(
-                        LOCALES
-                            .lookup_single_language::<&str>(
-                                &record.lang.parse()?,
-                                "waiting-list",
-                                None,
-                            )
-                            .ok_or_else(|| anyhow!("Missing translation for waiting-list!"))?,
-                    )
-                    .header(header::ContentType::TEXT_PLAIN)
-                    .body(
-                        LOCALES
-                            .lookup_single_language::<&str>(
-                                &record.lang.parse()?,
-                                "mail-new-dates-available",
-                                Some(&mail_context),
-                            )
-                            .ok_or_else(|| {
-                                anyhow!("Missing translation for mail-new-dates-available!")
-                            })?,
-                    )?;
-                mailer.send(mail).await?;
-            }
-            sqlx::query!(
-                "delete from waiting_list where date_type = $1",
-                &date_type.value
-            )
-            .execute(&mut *db)
-            .await?;
-        }
+    let mut date_types = HashSet::new();
+    for date in dates {
+        let Date {
+            from_date,
+            to_date,
+            room_id,
+            date_type,
+        } = date;
+        date_types.insert(date_type.value.clone());
+        sqlx::query!(
+            "insert into dates (from_date, to_date, room_id, date_type) values ($1, $2, $3, $4)",
+            &from_date,
+            &to_date,
+            &room_id,
+            &date_type.value,
+        )
+        .execute(&mut *db)
+        .await?;
+    }
+
+    for date_type in date_types.into_iter() {
+        waiting_list_notify(&mut db, &date_type, &config, &mailer).await?;
     }
 
     Ok(Redirect::to(uri!(dashboard(day = Option::<&str>::None))))

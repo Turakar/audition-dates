@@ -251,7 +251,9 @@ fn rocket() -> _ {
                 user::booking_new_post,
                 user::booking_delete_get,
                 user::booking_delete_post,
-                user::waiting_list_post,
+                user::waiting_list_subscribe_post,
+                user::waiting_list_unsubscribe_get,
+                user::waiting_list_unsubscribe_post,
             ],
         );
 

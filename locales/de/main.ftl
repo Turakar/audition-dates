@@ -97,9 +97,11 @@ no-dates-selected = Es sind keine Termine ausgewählt worden.
 
 welcome-user = Willkommen zur Terminbuchung für die Vorsingen bzw. Vorspiele. Bitte wähle, für welches Ensemble du einen Termin buchen möchtest.
 no-dates = Keine Termine mehr verfügbar. Bitte trage dich unten in die Warteliste ein, um benachrichtigt zu werden, wenn neue Termine angeboten werden.
-waiting-list = Warteliste
+waiting-list = Warteliste { $datetype }
 waiting-list-enter = Eintragen
 waiting-list-confirmation = Wir werden dich benachrichtigen, wenn neue Termine frei werden. Du solltest eine E-Mail mit einer Bestätigung über die Eintragung erhalten.
+waiting-list-unsubscribe-confirmation = Möchtest du dich wirklich aus der Warteliste austragen?
+waiting-list-unsubscribe = Austragen
 booking-new = Termin buchen
 day = Tag
 person-name = Name
@@ -123,4 +125,5 @@ mail-booking-body = Dein Termin wurde erfolgreich gebucht. Wir freuen uns auf di
     Falls du nicht kommen kannst, bitten wir dich dringend den Termin wieder zu stornieren, damit andere ihn buchen können. Folge dazu bitte diesem Link:
 mail-date-cancel-subject = Vorsingen / Vorspiel storniert
 mail-waiting-list-confirmation = Du wurdest erfoglreich in unsere Warteliste für neue Vorsingtermine / Vorspieltermine eingetragen.
-mail-new-dates-available = Es sind neue Vorsingtermine / Vorspieltermine verfügbar. Besuche bitte unsere Webseite um dich anzumelden: { $link }
+mail-waiting-list-invite = Es sind neue Vorsingtermine / Vorspieltermine verfügbar. Besuche bitte unsere Webseite um dich anzumelden:
+mail-waiting-list-footer = Um dich aus der Warteliste auszutragen, besuche bitte folgenden Link:
