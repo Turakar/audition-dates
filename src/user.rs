@@ -1,9 +1,5 @@
-use std::borrow::Cow;
-
 use anyhow::anyhow;
 use anyhow::Result;
-use fluent_templates::fluent_bundle::FluentValue;
-use fluent_templates::Loader;
 use futures::TryStreamExt;
 use lettre::message::header;
 use lettre::message::header::ContentTransferEncoding;
