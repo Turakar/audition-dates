@@ -29,7 +29,7 @@
     <select name="voice" id="voice">
         <option value="">{{ fluent(key="please-select", lang=lang) }}</option>
         {% for voice in voices %}
-            <option value="{{ voice.value }}" {% if voice_selected == voice.value %} selected {% endif %}>{{ fluent(key=voice.display_name, lang=lang) }}</option>
+            <option value="{{ voice.value }}" {% if voice_selected == voice.value %} selected {% endif %}>{{ voice.display_name }}</option>
         {% endfor %}
     </select>
     <label for="notes">{{ fluent(key="notes", lang=lang) }}</label>

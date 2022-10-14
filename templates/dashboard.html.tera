@@ -24,7 +24,7 @@
             <div class="pure-u-1 pure-u-md-1-2 pure-u-xl-1-3 pure-u-xxl-1-5">
                 <div class="grid-cell">
                     <input id="select-{{ date.id }}" name="dates" value="{{ date.id }}" type="checkbox" class="float-top-right"/>
-                    <b>{{ fluent(key=date.date_type.display_name, lang=lang) }}, <span class="time">{{ date.from_date | format_date }}</span> - <span class="time">{{ date.to_date | format_date }}</span></b><br>
+                    <b>{{ date.date_type.display_name }}, <span class="time">{{ date.from_date | format_date }}</span> - <span class="time">{{ date.to_date | format_date }}</span></b><br>
                     {{ date.room_number }}
                     {% if date.booking %}
                         <table>
@@ -38,7 +38,7 @@
                             </tr>
                             <tr>
                                 <td>{{ fluent(key="voice", lang=lang) }}:</td>
-                                <td style="word-break: break-word;">{{ fluent(key=date.booking.voice.display_name, lang=lang) }}</td>
+                                <td style="word-break: break-word;">{{ date.booking.voice.display_name }}</td>
                             </tr>
                             <tr>
                                 <td>{{ fluent(key="notes", lang=lang) }}:</td>

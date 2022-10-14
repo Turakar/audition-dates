@@ -7,7 +7,7 @@
     <select name="date_type" id="date_type">
         <option value="">{{ fluent(key="please-select", lang=lang) }}</option>
         {% for date_type in date_types %}
-            <option value="{{ date_type.value }}" {% if date_type_selected == date_type.value %} selected {% endif %}>{{ fluent(key=date_type.display_name, lang=lang) }}</option>
+            <option value="{{ date_type.value }}" {% if date_type_selected == date_type.value %} selected {% endif %}>{{ date_type.display_name }}</option>
         {% endfor %}
     </select>
     <label for="room">{{ fluent(key="room", lang=lang) }}</label>
