@@ -1,17 +1,36 @@
-.announcement {
+.admin-text {
     white-space: pre-wrap;
 }
 
-#content {
-    margin: 15pt;
+html, body {
+    height: 100%;
+    padding: 0;
+    margin: 0;
 }
 
-#footer {
-    margin: 15pt;
+#page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding: 0;
+    margin: 0;
 }
 
 #header {
     margin: 15pt;
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+#content {
+    margin: 15pt;
+    flex-grow: 1;
+}
+
+#footer {
+    padding: 15pt;
+    flex-grow: 1;
+    flex-shrink: 0;
 }
 
 #messages {

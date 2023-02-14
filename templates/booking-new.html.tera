@@ -1,7 +1,7 @@
 {% extends "base" %}
 {% block content %}
 <h1>{{ fluent(key="booking-new", lang=lang) }}</h1>
-<p class="announcement">{{ announcement }}</p>
+<p class="admin-text">{{ announcement }}</p>
 <table>
     <tr>
         <td>{{ fluent(key="day", lang=lang )}}:</td>
