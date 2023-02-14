@@ -1,6 +1,7 @@
 brand = Collegium Musicum of RWTH Aachen University
 title = Audition Dates - { brand }
 cookie-disclaimer = This website uses cookies that are necessary for the functionality of this service.
+impressum = Legal information
 
 language = English
 language-de = German

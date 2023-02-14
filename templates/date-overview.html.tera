@@ -1,7 +1,7 @@
 {% extends "base" %}
 {% block content %}
 <h1>{{ date_type.display_name }}</h1>
-<p class="announcement">{{ announcement }}</p>
+<p class="admin-text">{{ announcement }}</p>
 {% for day in dates | days %}
     <b><span class="date">{{ day | format_date }}</span></b>
     <br><br>

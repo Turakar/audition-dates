@@ -1,0 +1,5 @@
+{% extends "base" %}
+{% block content %}
+<h1>{{ fluent(key="impressum", lang=lang) }}</h1>
+<p class="admin-text">{{ impressum }}</p>
+{% endblock content %}

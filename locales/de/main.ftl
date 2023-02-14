@@ -1,6 +1,7 @@
 brand = Collegium Musicum der RWTH Aachen
 title = Vorsingtermine / Vorspieltermine - { brand }
 cookie-disclaimer = Diese Webseite verwendet Cookies, die zur Funktion notwendig sind.
+impressum = Impressum
 
 language = Deutsch
 language-de = Deutsch

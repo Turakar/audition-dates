@@ -95,6 +95,7 @@ pub struct Config {
     web_address: String,
     dates_per_day: usize,
     days_deadline: u32,
+    impressum: String,
 }
 
 lazy_static! {
@@ -254,6 +255,7 @@ fn rocket() -> _ {
                 user::waiting_list_subscribe_post,
                 user::waiting_list_unsubscribe_get,
                 user::waiting_list_unsubscribe_post,
+                user::impressum_get,
             ],
         );
 

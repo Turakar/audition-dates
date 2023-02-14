@@ -1,9 +1,5 @@
-use std::borrow::Cow;
-
 use anyhow::anyhow;
 use anyhow::Result;
-use fluent_templates::fluent_bundle::FluentValue;
-use fluent_templates::Loader;
 use futures::TryStreamExt;
 use lettre::message::header;
 use lettre::message::header::ContentTransferEncoding;
@@ -475,11 +471,7 @@ pub async fn waiting_list_notify(
             .from(config.email_from_address.parse()?)
             .subject(
                 LOCALES
-                    .lookup_single_language(
-                        &lang.parse()?,
-                        "waiting-list",
-                        Some(&mail_header_args),
-                    )
+                    .lookup_single_language(&lang.parse()?, "waiting-list", Some(&mail_header_args))
                     .ok_or_else(|| anyhow!("Missing translation for waiting-list!"))?,
             )
             .header(header::ContentType::TEXT_PLAIN)
@@ -491,4 +483,15 @@ pub async fn waiting_list_notify(
         mailer.send(message).await?;
     }
     Ok(())
+}
+
+#[get("/impressum")]
+pub async fn impressum_get(lang: Language, config: &State<Config>) -> Template {
+    Template::render(
+        "impressum",
+        context! {
+            lang: lang.into_string(),
+            impressum: config.impressum.as_str()
+        },
+    )
 }
