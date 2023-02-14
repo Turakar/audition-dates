@@ -30,10 +30,18 @@ use crate::MAIL_TEMPLATES;
 use crate::{language::Language, Config, Database, RocketResult};
 
 #[get("/")]
-pub async fn index_get(lang: Language, mut db: Connection<Database>) -> RocketResult<Template> {
+pub async fn index_get(
+    lang: Language,
+    mut db: Connection<Database>,
+    config: &State<Config>,
+) -> RocketResult<Template> {
     let lang = lang.into_string();
     let announcement = get_announcement("general", &lang, &mut db).await?;
-    let date_types = DateType::get_variants(&mut db, &lang).await?;
+    let date_types: Vec<DateType> = DateType::get_variants(&mut db, &lang)
+        .await?
+        .into_iter()
+        .filter(|date_type| config.enabled_date_types.contains(&date_type.value))
+        .collect();
     Ok(Template::render(
         "index",
         context! {

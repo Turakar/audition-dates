@@ -7,6 +7,7 @@ secret_key = "UZ/Q8SFljW9D7BQbTyIFWaYCZ4JOHczt7XMgdYXwJLk="
 dates_per_day = 3
 days_deadline = 1
 impressum = ""
+enabled_date_types = ["choir"]
 
 [default.databases.database]
 url = "postgres://audition_dates:shouldbesecret@localhost/audition_dates"

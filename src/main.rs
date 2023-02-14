@@ -96,6 +96,7 @@ pub struct Config {
     dates_per_day: usize,
     days_deadline: u32,
     impressum: String,
+    enabled_date_types: Vec<String>,
 }
 
 lazy_static! {
