@@ -310,7 +310,7 @@ pub async fn booking_delete_post(
             sqlx::query!("delete from bookings where token = $1", &token)
                 .execute(&mut *db)
                 .await?;
-            waiting_list_notify(&mut db, &date_type, &config, &mailer).await?;
+            waiting_list_notify(&mut db, &date_type, config, mailer).await?;
             Ok(Template::render(
                 "booking-delete-confirm",
                 context! { lang: lang.into_string() },
@@ -372,7 +372,7 @@ pub async fn waiting_list_subscribe_post(
         .as_str(),
     );
     mail_context.insert("lang", &lang);
-    let date_type = DateType::get_by_value(&mut db, &date_type, &lang).await?;
+    let date_type = DateType::get_by_value(&mut db, date_type, &lang).await?;
     let mail_header_args = map! {
         "datetype" => date_type.display_name.clone().unwrap().into()
     };
@@ -456,7 +456,7 @@ pub async fn waiting_list_notify(
     .await?;
 
     for (email, lang, token) in recipients {
-        let date_type = DateType::get_by_value(db, &date_type, &lang).await?;
+        let date_type = DateType::get_by_value(db, date_type, &lang).await?;
         let mut mail_context = tera::Context::new();
         mail_context.insert(
             "unsubscribe",

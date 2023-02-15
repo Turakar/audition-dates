@@ -7,6 +7,7 @@ use rocket_db_pools::Connection;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::util::datetime_to_day;
 use crate::Database;
 
 #[derive(Serialize, Deserialize)]
@@ -210,9 +211,9 @@ impl Date {
         };
 
         if days_deadline > 0 {
-            let today = Local::today();
+            let today = datetime_to_day(Local::now());
             dates.retain(|date| {
-                date.from_date.date() >= today + Duration::days(days_deadline as i64)
+                datetime_to_day(date.from_date) >= today + Duration::days(days_deadline as i64)
             });
         } else {
             let now = Local::now();
@@ -224,10 +225,10 @@ impl Date {
         }
 
         let mut i = 1;
-        let mut current_day = dates[0].from_date.date();
+        let mut current_day = datetime_to_day(dates[0].from_date);
         let mut current_count = 1;
         while i < dates.len() {
-            let next_day = dates[i].from_date.date();
+            let next_day = datetime_to_day(dates[i].from_date);
             if current_day == next_day {
                 if current_count < dates_per_day {
                     current_count += 1;

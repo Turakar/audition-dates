@@ -6,7 +6,6 @@ use chrono::DateTime;
 use chrono::Duration;
 use chrono::Local;
 use chrono::NaiveDateTime;
-use chrono::TimeZone;
 use lettre::message::header;
 use lettre::AsyncTransport;
 use lettre::Message as EmailMessage;
@@ -30,6 +29,7 @@ use crate::model::MessageType;
 use crate::model::Room;
 use crate::model::Voice;
 use crate::user::waiting_list_notify;
+use crate::util::datetime_to_day;
 use crate::Config;
 use crate::Mailer;
 use crate::{auth::Admin, language::Language, Database, RocketResult};
@@ -72,30 +72,33 @@ pub async fn dashboard(
         .fetch_one(&mut *db)
         .await?
         .display_name;
-    let day = match day {
-        Some(day) => NaiveDateTime::parse_from_str(day, crate::BROWSER_DATETIME_FORMAT)?,
+    let day = datetime_to_day(match day {
+        Some(day) => NaiveDateTime::parse_from_str(day, crate::BROWSER_DATETIME_FORMAT)?
+            .date()
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_local_timezone(Local)
+            .unwrap(),
         None => {
-            match sqlx::query_scalar!("select min(from_date) from dates where from_date >= now()")
-                .fetch_one(&mut *db)
-                .await?
+            let now = match sqlx::query_scalar!(
+                "select min(from_date) from dates where from_date >= now()"
+            )
+            .fetch_one(&mut *db)
+            .await?
             {
-                Some(date) => date.with_timezone(&Local).naive_local(),
-                None => Local::now().naive_local(),
-            }
+                Some(date) => date.with_timezone(&Local),
+                None => Local::now(),
+            };
+            datetime_to_day(now)
         }
-    };
-    let day = Local
-        .from_local_datetime(&day)
-        .unwrap()
-        .date()
-        .and_hms(0, 0, 0);
+    });
     let available_days: Vec<DateTime<Local>> = sqlx::query!(
         r#"select distinct date_trunc('day', from_date) as "day!" from dates order by "day!" asc"#
     )
     .fetch_all(&mut *db)
     .await?
     .into_iter()
-    .map(|record| record.day.with_timezone(&Local).date().and_hms(0, 0, 0))
+    .map(|record| datetime_to_day(record.day.with_timezone(&Local)))
     .collect();
     let dates: Vec<BookableDate> = sqlx::query!(
         r#"select
@@ -284,7 +287,7 @@ pub async fn date_new_1_post(
     let to_date = to_date.into_inner();
     let interval = interval as i64;
 
-    let num_minutes = (to_date - from_date).num_minutes() as i64;
+    let num_minutes = (to_date - from_date).num_minutes();
     if from_date >= to_date {
         messages.push(Message {
             text_key: String::from("wrong-date-order"),
@@ -402,7 +405,7 @@ pub async fn date_new_2_post(
     }
 
     for date_type in date_types.into_iter() {
-        waiting_list_notify(&mut db, &date_type, &config, &mailer).await?;
+        waiting_list_notify(&mut db, &date_type, config, mailer).await?;
     }
 
     Ok(Redirect::to(uri!(dashboard(day = Option::<&str>::None))))

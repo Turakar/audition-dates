@@ -3,6 +3,7 @@ mod auth;
 mod language;
 mod model;
 mod user;
+mod util;
 
 #[macro_use]
 extern crate rocket;
@@ -29,6 +30,7 @@ use rocket_dyn_templates::Template;
 use serde::Deserialize;
 use sqlx::migrate::Migrator;
 use tera::Tera;
+use util::datetime_to_day;
 
 pub type Mailer = AsyncSmtpTransport<Tokio1Executor>;
 
@@ -149,7 +151,7 @@ pub fn tera_days(
                 .get("from_date")
                 .ok_or_else(|| tera::Error::msg("Invalid argument!"))?;
             let datetime: DateTime<Local> = tera::from_value(value.clone())?;
-            Ok(datetime.date().and_hms(0, 0, 0))
+            Ok(datetime_to_day(datetime))
         })
         .collect::<tera::Result<Vec<DateTime<Local>>>>()?;
     let days: Vec<DateTime<Local>> = days.into_iter().unique().collect();
@@ -163,7 +165,7 @@ pub fn tera_on_day(
     let day = args
         .get("day")
         .ok_or_else(|| tera::Error::msg("Missing required argument 'day'!"))?;
-    let day = tera::from_value::<DateTime<Local>>(day.clone())?.date();
+    let day = datetime_to_day(tera::from_value::<DateTime<Local>>(day.clone())?);
 
     let array = value
         .as_array()
@@ -175,7 +177,7 @@ pub fn tera_on_day(
                 .get("from_date")
                 .ok_or_else(|| tera::Error::msg("Invalid argument!"))?;
             let datetime: DateTime<Local> = tera::from_value(date_value.clone())?;
-            Ok((value, datetime.date()))
+            Ok((value, datetime_to_day(datetime)))
         })
         .filter_ok(|(_, date)| *date == day)
         .map_ok(|(value, _)| value.clone())
