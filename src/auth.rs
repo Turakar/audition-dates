@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use anyhow::Context;
+use anyhow::Context as AnyhowContext;
 use argon2::password_hash::SaltString;
 use argon2::Argon2;
 use argon2::PasswordHash;
@@ -28,6 +28,7 @@ use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
 use serde::Deserialize;
 use serde::Serialize;
+use tera::Context;
 
 use crate::Config;
 use crate::Database;
@@ -35,6 +36,8 @@ use crate::Mailer;
 use crate::RocketResult;
 use crate::MAIL_TEMPLATES;
 
+use crate::mail::send_mail;
+use crate::mail::MailBody;
 use crate::model::handle_form_error;
 use crate::model::DisplayName;
 use crate::model::Email;
@@ -419,34 +422,25 @@ pub async fn password_reset_request_post<'r>(
         .await?
         .token;
 
-        let link = format!(
-            "{}/admin/password-reset?token={}",
-            &config.web_address, &token
-        );
-        let mut mail_context = tera::Context::new();
-        mail_context.insert("lang", &lang);
-        mail_context.insert("link", &link);
-        let mail = EmailMessage::builder()
-            .to(email.parse()?)
-            .from(config.email_from_address.parse()?)
-            .subject(
-                LOCALES
-                    .lookup_single_language::<&str>(
-                        &lang.parse()?,
-                        "mail-password-reset-subject",
-                        None,
+        send_mail(
+            config,
+            mailer,
+            email,
+            &lang,
+            "mail-password-reset-subject",
+            None,
+            MailBody::Template(
+                "password-reset.tera",
+                &Context::from_serialize(context! {
+                    lang: &lang,
+                    link: format!(
+                        "{}/admin/password-reset?token={}",
+                        &config.web_address, &token
                     )
-                    .ok_or_else(|| {
-                        anyhow!("Missing translation for mail-password-reset-subject!")
-                    })?,
-            )
-            .header(header::ContentType::TEXT_PLAIN)
-            .body(
-                MAIL_TEMPLATES
-                    .render("password-reset.tera", &mail_context)?
-                    .into_body(Some(ContentTransferEncoding::Base64)),
-            )?;
-        mailer.send(mail).await?;
+                })?,
+            ),
+        )
+        .await?;
     }
 
     Ok(Template::render(
@@ -511,29 +505,21 @@ pub async fn password_reset_post<'r>(
             .await?
             .email;
 
-            let mut mail_context = tera::Context::new();
-            mail_context.insert("lang", &lang);
-            let mail = EmailMessage::builder()
-                .to(email.parse()?)
-                .from(config.email_from_address.parse()?)
-                .subject(
-                    LOCALES
-                        .lookup_single_language::<&str>(
-                            &lang.parse()?,
-                            "mail-password-was-reset-subject",
-                            None,
-                        )
-                        .ok_or_else(|| {
-                            anyhow!("Missing translation for mail-password-was-reset-subject!")
-                        })?,
-                )
-                .header(header::ContentType::TEXT_PLAIN)
-                .body(
-                    MAIL_TEMPLATES
-                        .render("password-was-reset.tera", &mail_context)?
-                        .into_body(Some(ContentTransferEncoding::Base64)),
-                )?;
-            mailer.send(mail).await?;
+            send_mail(
+                config,
+                mailer,
+                &email,
+                &lang,
+                "mail-password-was-reset-subject",
+                None,
+                MailBody::Template(
+                    "password-was-reset.tera",
+                    &Context::from_serialize(context! {
+                        lang: &lang
+                    })?,
+                ),
+            )
+            .await?;
 
             Ok(Ok(Redirect::to(uri!(login_get(
                 redirect = Option::<&str>::None

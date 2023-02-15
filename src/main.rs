@@ -1,6 +1,7 @@
 mod admin;
 mod auth;
 mod language;
+mod mail;
 mod model;
 mod user;
 mod util;

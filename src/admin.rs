@@ -6,9 +6,6 @@ use chrono::DateTime;
 use chrono::Duration;
 use chrono::Local;
 use chrono::NaiveDateTime;
-use lettre::message::header;
-use lettre::AsyncTransport;
-use lettre::Message as EmailMessage;
 use rocket::form::Form;
 use rocket::form::FromForm;
 use rocket::response::Redirect;
@@ -19,7 +16,9 @@ use rocket_dyn_templates::{context, Template};
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::language::LOCALES;
+use crate::mail::send_mail;
+use crate::mail::waiting_list_notify;
+use crate::mail::MailBody;
 use crate::model::validate_room;
 use crate::model::DateType;
 use crate::model::FormDateTime;
@@ -28,7 +27,6 @@ use crate::model::Message;
 use crate::model::MessageType;
 use crate::model::Room;
 use crate::model::Voice;
-use crate::user::waiting_list_notify;
 use crate::util::datetime_to_day;
 use crate::Config;
 use crate::Mailer;
@@ -200,23 +198,16 @@ pub async fn date_cancel_post(
     for (email, lang) in emails {
         let explanation = explanations[&lang];
         if !explanation.is_empty() {
-            let mail = EmailMessage::builder()
-                .to(email.parse()?)
-                .from(config.email_from_address.parse()?)
-                .subject(
-                    LOCALES
-                        .lookup_single_language::<&str>(
-                            &lang.parse()?,
-                            "mail-date-cancel-subject",
-                            None,
-                        )
-                        .ok_or_else(|| {
-                            anyhow!("Missing translation for mail-date-cancel-subject!")
-                        })?,
-                )
-                .header(header::ContentType::TEXT_PLAIN)
-                .body(String::from(explanation))?;
-            mailer.send(mail).await?;
+            send_mail(
+                config,
+                mailer,
+                &email,
+                &lang,
+                "mail-date-cancel-subject",
+                None,
+                MailBody::Raw(String::from(explanation)),
+            )
+            .await?;
         }
     }
     for date in &dates {

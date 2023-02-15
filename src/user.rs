@@ -1,11 +1,4 @@
-use anyhow::anyhow;
 use anyhow::Result;
-use futures::TryStreamExt;
-use lettre::message::header;
-use lettre::message::header::ContentTransferEncoding;
-use lettre::message::IntoBody;
-use lettre::AsyncTransport;
-use lettre::Message as EmailMessage;
 use map_macro::map;
 use rocket::form::error::ErrorKind;
 use rocket::form::Contextual;
@@ -18,15 +11,17 @@ use rocket::Request;
 use rocket::State;
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
+use tera::Context;
 
-use crate::language::LOCALES;
+use crate::mail::send_mail;
+use crate::mail::waiting_list_notify;
+use crate::mail::MailBody;
 use crate::model::get_announcement;
 use crate::model::Date;
 use crate::model::Message;
 use crate::model::MessageType;
 use crate::model::{DateType, Email};
 use crate::Mailer;
-use crate::MAIL_TEMPLATES;
 use crate::{language::Language, Config, Database, RocketResult};
 
 #[get("/")]
@@ -219,42 +214,27 @@ pub async fn booking_new_post(
             .await?;
 
             let link = format!("{}/booking/delete/{}", &config.web_address, &token);
-            let mut mail_context = tera::Context::new();
-            mail_context.insert("lang", &lang);
-            mail_context.insert("link", &link);
-            mail_context.insert(
-                "day",
-                format!("{}", date.from_date.naive_local().format("%d.%m.%Y")).as_str(),
-            );
-            mail_context.insert(
-                "from",
-                format!("{}", date.from_date.naive_local().format("%H:%M")).as_str(),
-            );
-            mail_context.insert(
-                "to",
-                format!("{}", date.to_date.naive_local().format("%H:%M")).as_str(),
-            );
-            mail_context.insert("room_number", &date.room_number);
-            mail_context.insert("announcement", &announcement);
-            let mail = EmailMessage::builder()
-                .to(email.parse()?)
-                .from(config.email_from_address.parse()?)
-                .subject(
-                    LOCALES
-                        .lookup_single_language::<&str>(
-                            &lang.parse()?,
-                            "mail-booking-subject",
-                            None,
-                        )
-                        .ok_or_else(|| anyhow!("Missing translation for mail-booking-subject!"))?,
-                )
-                .header(header::ContentType::TEXT_PLAIN)
-                .body(
-                    MAIL_TEMPLATES
-                        .render("booking.tera", &mail_context)?
-                        .into_body(Some(ContentTransferEncoding::Base64)),
-                )?;
-            mailer.send(mail).await?;
+            send_mail(
+                config,
+                mailer,
+                email,
+                &lang,
+                "mail-booking-subject",
+                None,
+                MailBody::Template(
+                    "booking.tera",
+                    &Context::from_serialize(context! {
+                        lang: &lang,
+                        link,
+                        day: format!("{}", date.from_date.naive_local().format("%d.%m.%Y")),
+                        from: format!("{}", date.from_date.naive_local().format("%H:%M")),
+                        to: format!("{}", date.to_date.naive_local().format("%H:%M")),
+                        room_number: &date.room_number,
+                        announcement: &announcement,
+                    })?,
+                ),
+            )
+            .await?;
 
             Ok(Ok(Template::render(
                 "booking-success",
@@ -362,35 +342,29 @@ pub async fn waiting_list_subscribe_post(
             .await?
         }
     };
-    let mut mail_context = tera::Context::new();
-    mail_context.insert(
-        "unsubscribe",
-        format!(
-            "{}/waiting-list/unsubscribe/{}",
-            &config.web_address, &token
-        )
-        .as_str(),
-    );
-    mail_context.insert("lang", &lang);
     let date_type = DateType::get_by_value(&mut db, date_type, &lang).await?;
-    let mail_header_args = map! {
-        "datetype" => date_type.display_name.clone().unwrap().into()
+    let subject_args = map! {
+        "datetype" => date_type.display_name.as_deref().unwrap()
     };
-    let mail = EmailMessage::builder()
-        .to(email.parse()?)
-        .from(config.email_from_address.parse()?)
-        .subject(
-            LOCALES
-                .lookup_single_language(&lang.parse()?, "waiting-list", Some(&mail_header_args))
-                .ok_or_else(|| anyhow!("Missing translation for waiting-list!"))?,
-        )
-        .header(header::ContentType::TEXT_PLAIN)
-        .body(
-            MAIL_TEMPLATES
-                .render("waiting-list-confirmation.tera", &mail_context)?
-                .into_body(Some(ContentTransferEncoding::Base64)),
-        )?;
-    mailer.send(mail).await?;
+    send_mail(
+        config,
+        mailer,
+        email,
+        &lang,
+        "waiting-list",
+        Some(&subject_args),
+        MailBody::Template(
+            "waiting-list-confirmation.tera",
+            &Context::from_serialize(context! {
+                lang: &lang,
+                unsubscribe: format!(
+                    "{}/waiting-list/unsubscribe/{}",
+                    &config.web_address, &token
+                )
+            })?,
+        ),
+    )
+    .await?;
     Ok(Template::render(
         "waiting-list-confirmation",
         context! { lang, date_type },
@@ -436,61 +410,6 @@ pub async fn waiting_list_unsubscribe_post(
     .execute(&mut *db)
     .await?;
     Ok(Redirect::to(uri!(index_get)))
-}
-
-pub async fn waiting_list_notify(
-    db: &mut Connection<Database>,
-    date_type: &str,
-    config: &Config,
-    mailer: &Mailer,
-) -> Result<()> {
-    let recipients: Vec<(String, String, String)> = sqlx::query!(
-        r#"select email, lang, token
-        from waiting_list
-        where date_type = $1"#,
-        &date_type
-    )
-    .fetch(&mut **db)
-    .map_ok(|record| (record.email, record.lang, record.token))
-    .try_collect::<Vec<(String, String, String)>>()
-    .await?;
-
-    for (email, lang, token) in recipients {
-        let date_type = DateType::get_by_value(db, date_type, &lang).await?;
-        let mut mail_context = tera::Context::new();
-        mail_context.insert(
-            "unsubscribe",
-            format!(
-                "{}/waiting-list/unsubscribe/{}",
-                &config.web_address, &token
-            )
-            .as_str(),
-        );
-        mail_context.insert(
-            "link",
-            format!("{}/dates/{}", &config.web_address, &date_type.value).as_str(),
-        );
-        mail_context.insert("lang", &lang);
-        let mail_header_args = map! {
-            "datetype" => date_type.display_name.clone().unwrap().into()
-        };
-        let message = EmailMessage::builder()
-            .to(email.parse()?)
-            .from(config.email_from_address.parse()?)
-            .subject(
-                LOCALES
-                    .lookup_single_language(&lang.parse()?, "waiting-list", Some(&mail_header_args))
-                    .ok_or_else(|| anyhow!("Missing translation for waiting-list!"))?,
-            )
-            .header(header::ContentType::TEXT_PLAIN)
-            .body(
-                MAIL_TEMPLATES
-                    .render("waiting-list-invite.tera", &mail_context)?
-                    .into_body(Some(ContentTransferEncoding::Base64)),
-            )?;
-        mailer.send(message).await?;
-    }
-    Ok(())
 }
 
 #[get("/impressum")]
