@@ -13,7 +13,7 @@ extern crate rocket;
 extern crate lazy_static;
 
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     sync::atomic::{AtomicBool, Ordering},
 };
 
@@ -100,6 +100,7 @@ pub struct Config {
     days_deadline: u32,
     impressum: String,
     enabled_date_types: Vec<String>,
+    application_deadlines: BTreeMap<String, String>,
 }
 
 lazy_static! {

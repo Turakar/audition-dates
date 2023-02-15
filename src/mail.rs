@@ -14,7 +14,11 @@ use rocket_db_pools::Connection;
 use rocket_dyn_templates::context;
 use tera::Context;
 
-use crate::{language::LOCALES, model::DateType, Config, Database, Mailer, MAIL_TEMPLATES};
+use crate::{
+    language::LOCALES,
+    model::{Date, DateType},
+    Config, Database, Mailer, MAIL_TEMPLATES,
+};
 use anyhow::anyhow;
 use anyhow::Result;
 
@@ -69,6 +73,13 @@ pub async fn waiting_list_notify(
     config: &Config,
     mailer: &Mailer,
 ) -> Result<()> {
+    if Date::get_available_dates(db, date_type, config, None)
+        .await?
+        .is_empty()
+    {
+        return Ok(());
+    }
+
     let recipients: Vec<(String, String, String)> = sqlx::query!(
         r#"select email, lang, token
         from waiting_list

@@ -3,11 +3,13 @@ use anyhow::Result;
 use chrono::DateTime;
 use chrono::Duration;
 use chrono::Local;
+use chrono::NaiveDateTime;
 use rocket_db_pools::Connection;
 use serde::Deserialize;
 use serde::Serialize;
 
 use crate::util::datetime_to_day;
+use crate::Config;
 use crate::Database;
 
 #[derive(Serialize, Deserialize)]
@@ -101,13 +103,20 @@ pub struct Date {
 impl Date {
     pub async fn get_available_dates(
         db: &mut Connection<Database>,
-        date_type: Option<&str>,
-        dates_per_day: usize,
-        days_deadline: u32,
+        date_type: &str,
+        config: &Config,
         lang: Option<&str>,
     ) -> Result<Vec<Date>> {
-        let mut dates: Vec<Date> = match (date_type, lang) {
-            (Some(date_type), Some(lang)) => sqlx::query!(
+        if let Some(deadline) = config.application_deadlines.get(date_type) {
+            let deadline = NaiveDateTime::parse_from_str(deadline, crate::BROWSER_DATETIME_FORMAT)?;
+            let now = Local::now().naive_local();
+            if now >= deadline {
+                return Ok(Vec::new());
+            }
+        }
+
+        let mut dates: Vec<Date> = match lang {
+            Some(lang) => sqlx::query!(
                 "select dates.id as id, from_date, to_date, room_number, dates.date_type, display_name \
                     from dates \
                     join rooms on rooms.id = dates.room_id \
@@ -135,7 +144,7 @@ impl Date {
             })
             .collect(),
 
-            (Some(date_type), None) => sqlx::query!(
+            None => sqlx::query!(
                 "select dates.id as id, from_date, to_date, room_number, dates.date_type \
                     from dates \
                     join rooms on rooms.id = dates.room_id \
@@ -159,68 +168,20 @@ impl Date {
                 },
             })
             .collect(),
-
-            (None, Some(lang)) => sqlx::query!(
-                "select dates.id as id, from_date, to_date, room_number, dates.date_type, display_name \
-                    from dates \
-                    join date_types_translations on date_types_translations.date_type = dates.date_type \
-                    join rooms on rooms.id = dates.room_id \
-                    left join bookings on dates.id = bookings.date_id \
-                    where token is null \
-                    and date_types_translations.lang = $1 \
-                    order by from_date asc",
-                    &lang,
-            )
-            .fetch_all(&mut **db)
-            .await?
-            .into_iter()
-            .map(|record| Date {
-                id: record.id,
-                from_date: record.from_date.with_timezone(&Local),
-                to_date: record.to_date.with_timezone(&Local),
-                room_number: record.room_number,
-                date_type: DateType {
-                    value: record.date_type,
-                    display_name: Some(record.display_name),
-                },
-            })
-            .collect(),
-
-            (None, None) => sqlx::query!(
-                "select dates.id as id, from_date, to_date, room_number, dates.date_type \
-                    from dates \
-                    join rooms on rooms.id = dates.room_id \
-                    left join bookings on dates.id = bookings.date_id \
-                    where token is null \
-                    order by from_date asc",
-            )
-            .fetch_all(&mut **db)
-            .await?
-            .into_iter()
-            .map(|record| Date {
-                id: record.id,
-                from_date: record.from_date.with_timezone(&Local),
-                to_date: record.to_date.with_timezone(&Local),
-                room_number: record.room_number,
-                date_type: DateType {
-                    value: record.date_type,
-                    display_name: None,
-                },
-            })
-            .collect(),
         };
 
-        if days_deadline > 0 {
+        if config.days_deadline > 0 {
             let today = datetime_to_day(Local::now());
             dates.retain(|date| {
-                datetime_to_day(date.from_date) >= today + Duration::days(days_deadline as i64)
+                datetime_to_day(date.from_date)
+                    >= today + Duration::days(config.days_deadline as i64)
             });
         } else {
             let now = Local::now();
             dates.retain(|date| date.from_date >= now);
         }
 
-        if dates.is_empty() || dates_per_day == 0 {
+        if dates.is_empty() || config.dates_per_day == 0 {
             return Ok(dates);
         }
 
@@ -230,7 +191,7 @@ impl Date {
         while i < dates.len() {
             let next_day = datetime_to_day(dates[i].from_date);
             if current_day == next_day {
-                if current_count < dates_per_day {
+                if current_count < config.dates_per_day {
                     current_count += 1;
                     i += 1;
                 } else {
@@ -250,20 +211,12 @@ impl Date {
         db: &mut Connection<Database>,
         id: i32,
         lang: &str,
-        dates_per_day: usize,
-        days_deadline: u32,
+        config: &Config,
     ) -> Result<Option<Date>> {
         let date_type = sqlx::query_scalar!("select date_type from dates where id = $1", &id)
             .fetch_one(&mut **db)
             .await?;
-        let mut dates = Self::get_available_dates(
-            db,
-            Some(&date_type),
-            dates_per_day,
-            days_deadline,
-            Some(lang),
-        )
-        .await?;
+        let mut dates = Self::get_available_dates(db, &date_type, config, Some(lang)).await?;
         dates.retain(|date| date.id == id);
         match dates.len() {
             0 => Ok(None),

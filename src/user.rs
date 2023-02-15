@@ -55,14 +55,7 @@ pub async fn date_overview_get(
     date_type: &str,
 ) -> RocketResult<Template> {
     let lang = lang.into_string();
-    let dates = Date::get_available_dates(
-        &mut db,
-        Some(date_type),
-        config.dates_per_day,
-        config.days_deadline,
-        Some(lang.as_str()),
-    )
-    .await?;
+    let dates = Date::get_available_dates(&mut db, date_type, config, Some(lang.as_str())).await?;
     let announcement = get_announcement(date_type, &lang, &mut db).await?;
     let date_type = DateType::get_by_value(&mut db, date_type, &lang).await?;
     Ok(Template::render(
@@ -92,14 +85,7 @@ pub async fn booking_new_get(
     id: i32,
 ) -> RocketResult<Result<Template, Status>> {
     let lang = lang.into_string();
-    let date = Date::get_available_date(
-        &mut db,
-        id,
-        lang.as_str(),
-        config.dates_per_day,
-        config.days_deadline,
-    )
-    .await?;
+    let date = Date::get_available_date(&mut db, id, lang.as_str(), config).await?;
 
     match date {
         None => Ok(Err(Status::Gone)),
@@ -133,15 +119,7 @@ pub async fn booking_new_post(
     id: i32,
 ) -> RocketResult<Result<Template, Status>> {
     let lang = lang.into_string();
-    let date = match Date::get_available_date(
-        &mut db,
-        id,
-        lang.as_str(),
-        config.dates_per_day,
-        config.days_deadline,
-    )
-    .await?
-    {
+    let date = match Date::get_available_date(&mut db, id, lang.as_str(), config).await? {
         Some(date) => date,
         None => {
             return Ok(Err(Status::Gone));
