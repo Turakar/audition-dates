@@ -99,6 +99,7 @@ no-dates-selected = No dates were selected.
 welcome-user = Welcome to the booking system for audition dates. Please select the ensemble you want to join.
 no-dates = No dates available. Please enter the waiting list below to be notified if we add new dates.
 waiting-list = Waiting List { $datetype }
+waiting-list-new-dates = Waiting list for new dates
 waiting-list-enter = Subscribe
 waiting-list-confirmation = We will notify you as soon as new dates are offered.
 waiting-list-unsubscribe-confirmation = Do you really want to unsubscribe to the waiting list?

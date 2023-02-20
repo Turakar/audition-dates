@@ -16,7 +16,7 @@ use tera::Context;
 
 use crate::{
     language::LOCALES,
-    model::{Date, DateType},
+    model::{check_date_type_access, Date, DateType},
     Config, Database, Mailer, MAIL_TEMPLATES,
 };
 use anyhow::anyhow;
@@ -73,13 +73,6 @@ pub async fn waiting_list_notify(
     config: &Config,
     mailer: &Mailer,
 ) -> Result<()> {
-    if Date::get_available_dates(db, date_type, config, None)
-        .await?
-        .is_empty()
-    {
-        return Ok(());
-    }
-
     let recipients: Vec<(String, String, String)> = sqlx::query!(
         r#"select email, lang, token
         from waiting_list
@@ -92,6 +85,14 @@ pub async fn waiting_list_notify(
     .await?;
 
     for (email, lang, token) in recipients {
+        let ignore_deadline = check_date_type_access(date_type, Some(&token), config, db).await?;
+        if Date::get_available_dates(db, date_type, config, None, ignore_deadline)
+            .await?
+            .is_empty()
+        {
+            continue;
+        }
+
         let date_type = DateType::get_by_value(db, date_type, &lang).await?;
         let mail_header_args = map! {
             "datetype" => date_type.display_name.as_deref().unwrap()
@@ -111,7 +112,7 @@ pub async fn waiting_list_notify(
                         "{}/waiting-list/unsubscribe/{}",
                         &config.web_address, &token
                     ),
-                    link: format!("{}/dates/{}", &config.web_address, &date_type.value),
+                    link: format!("{}/dates/{}?token={}", &config.web_address, &date_type.value, &token),
                 })?,
             ),
         )

@@ -117,3 +117,22 @@ impl<'r> FromFormField<'r> for FormDateTime {
         Ok(FormDateTime(local))
     }
 }
+
+pub struct SelectString<'r>(pub &'r str);
+
+impl<'r> IntoInner<&'r str> for SelectString<'r> {
+    fn into_inner(self) -> &'r str {
+        self.0
+    }
+}
+
+impl<'r> FromFormField<'r> for SelectString<'r> {
+    fn from_value(field: ValueField<'r>) -> form::Result<'r, Self> {
+        let value = field.value;
+        if !value.is_empty() {
+            Ok(SelectString(value))
+        } else {
+            Err(form::Error::validation("validation-select").into())
+        }
+    }
+}

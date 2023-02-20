@@ -6,7 +6,12 @@
     <b><span class="date">{{ day | format_date }}</span></b>
     <br><br>
     {% for date in dates | on_day(day=day) %}
-        <a href="/booking/new/{{ date.id }}" class="pure-button">
+        {% if token %}
+            {% set href = "/booking/new/" ~ date.id ~ "?token=" ~ token %}
+        {% else %}
+            {% set href = "/booking/new/" ~ date.id %}
+        {% endif %}
+        <a href="{{ href }}" class="pure-button">
             <span class="time">{{ date.from_date | format_date }}</span> - <span class="time">{{ date.to_date | format_date }}</span>,
             {{ date.room_number }}
         </a>
@@ -14,10 +19,11 @@
     {% endfor %}
 {% else %}
     <p>{{ fluent(key="no-dates", lang=lang) }}</p>
+{% endfor %}
+    <p>{{ fluent(key="waiting-list-new-dates", lang=lang) }}</p>
     <form method="post" action="/waiting-list/subscribe/{{ date_type.value }}" class="pure-form">
         <label for="email">{{ fluent(key="email", lang=lang) }}</label>
         <input type="email" id="email" name="email" placeholder="{{ fluent(key="email", lang=lang) }}" />
         <button type="submit" class="pure-button pure-button-primary">{{ fluent(key="waiting-list-enter", lang=lang) }}</button>
     </form>
-{% endfor %}
 {% endblock content %}
