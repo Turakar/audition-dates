@@ -16,10 +16,13 @@ use tera::Context;
 use crate::mail::send_mail;
 use crate::mail::waiting_list_notify;
 use crate::mail::MailBody;
+use crate::model::check_date_type_access;
 use crate::model::get_announcement;
+use crate::model::get_waiting_list_email;
 use crate::model::Date;
 use crate::model::Message;
 use crate::model::MessageType;
+use crate::model::SelectString;
 use crate::model::{DateType, Email};
 use crate::Mailer;
 use crate::{language::Language, Config, Database, RocketResult};
@@ -47,15 +50,24 @@ pub async fn index_get(
     ))
 }
 
-#[get("/dates/<date_type>")]
+#[get("/dates/<date_type>?<token>")]
 pub async fn date_overview_get(
     lang: Language,
     mut db: Connection<Database>,
     config: &State<Config>,
     date_type: &str,
+    token: Option<&str>,
 ) -> RocketResult<Template> {
     let lang = lang.into_string();
-    let dates = Date::get_available_dates(&mut db, date_type, config, Some(lang.as_str())).await?;
+    let ignore_waiting_list = check_date_type_access(date_type, token, config, &mut db).await?;
+    let dates = Date::get_available_dates(
+        &mut db,
+        date_type,
+        config,
+        Some(lang.as_str()),
+        ignore_waiting_list,
+    )
+    .await?;
     let announcement = get_announcement(date_type, &lang, &mut db).await?;
     let date_type = DateType::get_by_value(&mut db, date_type, &lang).await?;
     Ok(Template::render(
@@ -65,44 +77,52 @@ pub async fn date_overview_get(
             date_type,
             dates,
             announcement,
+            token,
         },
     ))
 }
 
 #[derive(FromForm)]
+#[allow(dead_code)]
 pub struct BookingForm<'r> {
     email: Email<'r>,
     person_name: &'r str,
     notes: &'r str,
-    voice: &'r str,
+    voice: SelectString<'r>,
+    token: Option<&'r str>,
 }
 
-#[get("/booking/new/<id>")]
+#[get("/booking/new/<id>?<token>")]
 pub async fn booking_new_get(
     lang: Language,
     mut db: Connection<Database>,
     config: &State<Config>,
     id: i32,
+    token: Option<&str>,
 ) -> RocketResult<Result<Template, Status>> {
     let lang = lang.into_string();
-    let date = Date::get_available_date(&mut db, id, lang.as_str(), config).await?;
+    let date = Date::get_available_date(&mut db, id, lang.as_str(), config, token).await?;
 
     match date {
         None => Ok(Err(Status::Gone)),
         Some(date) => {
             let announcement = get_announcement(&date.date_type.value, &lang, &mut db).await?;
             let voices = date.date_type.get_voices(&mut db, &lang, "booking").await?;
+            let email = get_waiting_list_email(token, &mut db).await?;
+            let email_fixed = email.is_some();
             Ok(Ok(Template::render(
                 "booking-new",
                 context! {
                     lang,
                     voices,
                     date,
-                    email: "",
+                    email: email.unwrap_or_default(),
+                    email_fixed,
                     person_name: "",
                     notes: "",
                     voice_selected: "",
                     announcement,
+                    token,
                 },
             )))
         }
@@ -119,7 +139,8 @@ pub async fn booking_new_post(
     id: i32,
 ) -> RocketResult<Result<Template, Status>> {
     let lang = lang.into_string();
-    let date = match Date::get_available_date(&mut db, id, lang.as_str(), config).await? {
+    let token = form.context.field_value("token");
+    let date = match Date::get_available_date(&mut db, id, lang.as_str(), config, token).await? {
         Some(date) => date,
         None => {
             return Ok(Err(Status::Gone));
@@ -152,11 +173,13 @@ pub async fn booking_new_post(
                     voices,
                     date,
                     email: context.field_value("email").unwrap_or_default(),
+                    email_fixed: token.is_some(),
                     person_name: context.field_value("person_name").unwrap_or_default(),
                     notes: context.field_value("notes").unwrap_or_default(),
                     voice_selected: context.field_value("voice").unwrap_or_default(),
                     messages,
                     announcement,
+                    token,
                 },
             )))
         }
@@ -164,8 +187,16 @@ pub async fn booking_new_post(
             email: Email(email),
             person_name,
             notes,
-            voice,
+            voice: SelectString(voice),
+            token: _,
         }) => {
+            if let Some(waiting_list_email) = get_waiting_list_email(token, &mut db).await? {
+                println!("{} {}", waiting_list_email, email);
+                if waiting_list_email != *email {
+                    return Ok(Err(Status::Gone));
+                }
+            }
+
             let token = sqlx::query_scalar!(
                 "insert into bookings (date_id, email, person_name, notes, voice, lang) \
             values ($1, $2, $3, $4, (select id from voices where value = $5 and date_type = $6 and position = 'booking'), $7) \

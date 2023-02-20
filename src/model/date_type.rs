@@ -12,6 +12,8 @@ use crate::util::datetime_to_day;
 use crate::Config;
 use crate::Database;
 
+use super::check_date_type_access;
+
 #[derive(Serialize, Deserialize)]
 pub struct Voice {
     pub value: String,
@@ -106,12 +108,16 @@ impl Date {
         date_type: &str,
         config: &Config,
         lang: Option<&str>,
+        ignore_deadline: bool,
     ) -> Result<Vec<Date>> {
-        if let Some(deadline) = config.application_deadlines.get(date_type) {
-            let deadline = NaiveDateTime::parse_from_str(deadline, crate::BROWSER_DATETIME_FORMAT)?;
-            let now = Local::now().naive_local();
-            if now >= deadline {
-                return Ok(Vec::new());
+        if !ignore_deadline {
+            if let Some(deadline) = config.application_deadlines.get(date_type) {
+                let deadline =
+                    NaiveDateTime::parse_from_str(deadline, crate::BROWSER_DATETIME_FORMAT)?;
+                let now = Local::now().naive_local();
+                if now >= deadline {
+                    return Ok(Vec::new());
+                }
             }
         }
 
@@ -212,11 +218,14 @@ impl Date {
         id: i32,
         lang: &str,
         config: &Config,
+        token: Option<&str>,
     ) -> Result<Option<Date>> {
         let date_type = sqlx::query_scalar!("select date_type from dates where id = $1", &id)
             .fetch_one(&mut **db)
             .await?;
-        let mut dates = Self::get_available_dates(db, &date_type, config, Some(lang)).await?;
+        let ignore_deadline = check_date_type_access(&date_type, token, config, db).await?;
+        let mut dates =
+            Self::get_available_dates(db, &date_type, config, Some(lang), ignore_deadline).await?;
         dates.retain(|date| date.id == id);
         match dates.len() {
             0 => Ok(None),
