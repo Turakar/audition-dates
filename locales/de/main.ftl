@@ -96,8 +96,8 @@ date-cancel = Termin stornieren
 date-cancel-explanation = Bitte gebe einen Text an, der an die Personen per Mail verschickt wird, die bereits einen der Termine gebucht haben. Wenn alle Felder leer bleiben, wird keine Mail verschickt.
 no-dates-selected = Es sind keine Termine ausgewählt worden.
 
-welcome-user = Willkommen zur Terminbuchung für die Vorsingen bzw. Vorspiele. Bitte wähle, für welches Ensemble du einen Termin buchen möchtest.
-no-dates = Keine Termine mehr verfügbar. Bitte trage dich unten in die Warteliste ein, um benachrichtigt zu werden, wenn neue Termine angeboten werden.
+welcome-user = Willkommen auf unserer Webseite für die Vorsingen!
+no-dates = Derzeit sind keine Termine verfügbar. Bitte trage dich unten in die Warteliste ein, um benachrichtigt zu werden, wenn neue Termine angeboten werden.
 waiting-list = Warteliste { $datetype }
 waiting-list-new-dates = Warteliste für neue Termine
 waiting-list-enter = Eintragen

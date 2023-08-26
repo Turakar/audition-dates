@@ -193,8 +193,8 @@ pub async fn favicon_get() -> Redirect {
     Redirect::to("/static/favicon/favicon.ico")
 }
 
-#[launch]
-fn rocket() -> _ {
+#[rocket::main]
+async fn main() -> Result<(), rocket::Error> {
     let rocket = rocket::build()
         .attach(Template::custom(|engines| {
             engines
@@ -270,5 +270,9 @@ fn rocket() -> _ {
         .port(config.email_port)
         .build();
 
-    rocket.manage(mailer)
+    let rocket = rocket.manage(mailer);
+
+    rocket.ignite().await?.launch().await?;
+
+    Ok(())
 }

@@ -9,7 +9,7 @@ use lettre::{
     },
     AsyncTransport, Message,
 };
-use map_macro::map;
+use map_macro::hash_map;
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::context;
 use tera::Context;
@@ -94,7 +94,7 @@ pub async fn waiting_list_notify(
         }
 
         let date_type = DateType::get_by_value(db, date_type, &lang).await?;
-        let mail_header_args = map! {
+        let mail_header_args = hash_map! {
             "datetype" => date_type.display_name.as_deref().unwrap()
         };
         send_mail(

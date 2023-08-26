@@ -96,7 +96,7 @@ date-cancel = Cancel date
 date-cancel-explanation = Please provide a text which is sent per mail to the people who already booked one of the dates. If all fields remain empty, no mail is sent.
 no-dates-selected = No dates were selected.
 
-welcome-user = Welcome to the booking system for audition dates. Please select the ensemble you want to join.
+welcome-user = Welcome to our webpage for the audition dates!
 no-dates = No dates available. Please enter the waiting list below to be notified if we add new dates.
 waiting-list = Waiting List { $datetype }
 waiting-list-new-dates = Waiting list for new dates

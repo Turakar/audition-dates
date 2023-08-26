@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use accept_language::intersection as accept_language_intersection;
+// use accept_language::intersection as accept_language_intersection;
 use fluent_templates::{static_loader, FluentLoader, StaticLoader};
 use rocket::{
     request::{FromRequest, Outcome},
@@ -36,7 +36,7 @@ impl<'r> FromRequest<'r> for Language {
                 Some(cookie) if is_supported_language(cookie.value()) => {
                     String::from(cookie.value())
                 }
-                _ => match req.headers().get_one("accept-language") {
+                /*_ => match req.headers().get_one("accept-language") {
                     Some(value) => {
                         let common_languages =
                             accept_language_intersection(value, SUPPORTED_LANGUAGES.to_vec());
@@ -46,7 +46,8 @@ impl<'r> FromRequest<'r> for Language {
                         }
                     }
                     None => "de".into(),
-                },
+                },*/
+                _ => "de".into(),
             },
         })
     }

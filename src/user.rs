@@ -1,5 +1,5 @@
 use anyhow::Result;
-use map_macro::map;
+use map_macro::hash_map;
 use rocket::form::error::ErrorKind;
 use rocket::form::Contextual;
 use rocket::form::Form;
@@ -352,7 +352,7 @@ pub async fn waiting_list_subscribe_post(
         }
     };
     let date_type = DateType::get_by_value(&mut db, date_type, &lang).await?;
-    let subject_args = map! {
+    let subject_args = hash_map! {
         "datetype" => date_type.display_name.as_deref().unwrap()
     };
     send_mail(
